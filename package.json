@@ -1,6 +1,6 @@
 {
   "name": "@tobloef/build-tool",
-  "description": "Minimal build tool for web projects",
+  "description": "Personal build tool for web projects",
   "version": "0.1.0",
   "author": {
     "name": "Tobias Løfgren",
