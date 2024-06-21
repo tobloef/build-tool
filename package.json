@@ -1,5 +1,14 @@
 {
   "name": "@tobloef/build-tool",
+  "description": "Minimal build tool for web projects",
   "version": "0.1.0",
-  "author": "Tobias Løfgren <tobloef@gmail.com> (https://tobloef.com)"
+  "author": {
+    "name": "Tobias Løfgren",
+    "email": "tobloef@gmail.com",
+    "url": "https://tobloef.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "url": "https://gjthub.com/tobloef/build-tool"
+  }
 }
