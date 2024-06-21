@@ -10,5 +10,11 @@
   "license": "MIT",
   "repository": {
     "url": "https://gjthub.com/tobloef/build-tool"
+  },
+  "scripts": {
+    "check": "tsc --project jsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.2"
   }
 }
