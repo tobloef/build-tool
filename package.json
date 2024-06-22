@@ -11,10 +11,12 @@
   "repository": {
     "url": "https://gjthub.com/tobloef/build-tool"
   },
+  "type": "module",
   "scripts": {
     "check": "tsc --project jsconfig.json"
   },
   "devDependencies": {
+    "@types/node": "^20.14.8",
     "typescript": "^5.5.2"
   }
 }

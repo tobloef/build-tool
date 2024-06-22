@@ -1,7 +1,13 @@
 {
   "compilerOptions": {
     "checkJs": true,
-    "strict": true
+    "strict": true,
+    "module": "nodenext",
+    "types": [
+      "node"
+    ]
   },
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }
