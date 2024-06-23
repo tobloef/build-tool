@@ -1,6 +1,7 @@
 import { pathToFileURL } from "url";
 import { existsSync } from "node:fs";
 import { log, LogLevel } from "./logging.js";
+import { getPackageJson } from "./utils/package.js";
 
 export async function cli() {
   const buildConfigPath = findBuildConfigPath();
@@ -39,10 +40,17 @@ function findBuildConfigPath() {
  */
 export function isCli(rootModuleUrl) {
   const calledScript = pathToFileURL(process.argv[1]).href;
-  const rootModuleUrlWithoutFile = rootModuleUrl.split("/").slice(0, -1).join("/");
 
-  return (
+  // Could be called like "node ." or "node build-tool"
+  const packageJson = getPackageJson();
+  const rootModuleUrlWithoutMainPath = rootModuleUrl
+    .replace(packageJson.main, "")
+    .replace(/\/$/, "");
+
+  const result = (
     rootModuleUrl === calledScript ||
-    rootModuleUrlWithoutFile === calledScript // Could be called like "node ."
+    rootModuleUrlWithoutMainPath === calledScript
   );
+
+  return result;
 }

@@ -1,5 +1,4 @@
-import { cli, isCli } from "./src/cli.js";
-
+import { cli, isCli } from "./cli.js";
 
 if (isCli(import.meta.url)) {
   await cli();
