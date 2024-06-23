@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "fs";
 
 /**
  * Find, read, and parse the package.json file.
- * @returns {Object}
+ * @returns {Record<string, unknown>}
  */
 export function getPackageJson() {
   const path = findPackageJsonPath();
@@ -14,7 +14,7 @@ export function getPackageJson() {
 
 /**
  * Traverse folder tree upwards until we find a package.json.
- * @returns {string | null} Path of found package.json or null.
+ * @returns {string} Path of found package.json
  */
 function findPackageJsonPath() {
   let currentDir = import.meta.dirname;
@@ -29,5 +29,5 @@ function findPackageJsonPath() {
     currentDir = currentDir.split("/").slice(0, -1).join("/");
   }
 
-  return null;
+  throw Error(`No package.json file found in "${import.meta.dirname} or any of its parent folders."`);
 }

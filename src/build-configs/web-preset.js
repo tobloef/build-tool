@@ -1,4 +1,4 @@
-/** @import { BuildConfig } from "./src/build-config/index.js" */
+/** @import { BuildConfig } from "./index.js" */
 
 import { copy, npmInstall } from "../modules/index.js";
 

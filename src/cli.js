@@ -14,9 +14,7 @@ export async function cli() {
 async function findBuildConfig() {
   const path = process.argv[2] ?? `${process.cwd()}/build-config.js`;
 
-  const isPreset = Object.keys(presets).includes(path);
-
-  if (!existsSync(path) && !isPreset) {
+  if (!existsSync(path) && !isPreset(path)) {
     log(
       LogLevel.ERROR,
       `Error: No build config found in "${path}".` +
@@ -29,13 +27,24 @@ async function findBuildConfig() {
     return;
   }
 
-  if (isPreset) {
+  if (isPreset(path)) {
     return presets[path];
   }
 
   return await readBuildConfig(path);
 }
 
+/**
+ * @param {string} path
+ * @returns {path is keyof presets}
+ */
+function isPreset(path) {
+  return Object.keys(presets).includes(path);
+}
+
+/**
+ * @param {string} path
+ */
 async function readBuildConfig(path) {
   const relativeBuildConfigPath = pathToFileURL(path).href;
   const buildConfigModule = await import(relativeBuildConfigPath);
@@ -61,8 +70,13 @@ export function isCli(rootModuleUrl) {
 
   // Could be called like "node ." or "node build-tool"
   const packageJson = getPackageJson();
+
+  if (typeof packageJson.main !== "string") {
+    throw new Error(`Expected package.json "main" property to be a string.`);
+  }
+
   const rootModuleUrlWithoutMainPath = rootModuleUrl
-    .replace(packageJson.main, "")
+    .replace(packageJson.main ?? "", "")
     .replace(/\/$/, "");
 
   const result = (
