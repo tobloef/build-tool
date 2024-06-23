@@ -1,3 +1,5 @@
+import webPreset from "./web-preset.js";
+
 /** @import {Module} from "../modules/index.js" */
 
 /**
@@ -15,6 +17,7 @@
  * @typedef {Object} WatchOptions
  */
 
+
 /**
  * @typedef {Object} ServeOptions
  * @property {string} [address] The address to bind the server to.
@@ -22,3 +25,7 @@
  * @property {boolean} [open] Whether to open the served URL in the default browser.
  * @property {boolean} [hot] Whether to enable hot reloading.
  */
+
+export const presets = {
+  web: webPreset,
+};

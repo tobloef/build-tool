@@ -2,35 +2,53 @@ import { pathToFileURL } from "url";
 import { existsSync } from "node:fs";
 import { log, LogLevel } from "./logging.js";
 import { getPackageJson } from "./utils/package.js";
+import { presets } from "./build-configs/index.js";
 
 export async function cli() {
-  const buildConfigPath = findBuildConfigPath();
-  const relativeBuildConfigPath = pathToFileURL(buildConfigPath).href;
-  const buildConfigModule = await import(relativeBuildConfigPath);
+  const buildConfig = await findBuildConfig();
 
-  if (!buildConfigModule.default) {
-    log(LogLevel.ERROR, "Error: No default export found in build config.");
-    process.exit(1);
-  }
-
-  const buildConfig = buildConfigModule.default;
 
   // TODO
 }
 
-function findBuildConfigPath() {
-  let currentPath = process.cwd();
+async function findBuildConfig() {
+  const path = process.argv[2] ?? `${process.cwd()}/build-config.js`;
 
-  if (process.argv[2]) {
-    if (existsSync(process.argv[2])) {
-      return process.argv[2];
-    }
-  } else if (existsSync(`${currentPath}/build-config.js`)) {
-    return `${currentPath}/build-config.js`;
+  const isPreset = Object.keys(presets).includes(path);
+
+  if (!existsSync(path) && !isPreset) {
+    log(
+      LogLevel.ERROR,
+      `Error: No build config found in "${path}".` +
+      "\nYou must either:" +
+      "\n  * Have a build-config.js file in the working directory" +
+      "\n  * Specify a path to a build config as the first argument" +
+      `\n  * Specify a preset as the first argument (available presets: ${Object.keys(presets).join(",")})`,
+    );
+    process.exit(1);
+    return;
   }
 
-  log(LogLevel.ERROR, "Error: No build config found. Must exist in working directory or be passed as the first argument.");
-  process.exit(1);
+  if (isPreset) {
+    return presets[path];
+  }
+
+  return await readBuildConfig(path);
+}
+
+async function readBuildConfig(path) {
+  const relativeBuildConfigPath = pathToFileURL(path).href;
+  const buildConfigModule = await import(relativeBuildConfigPath);
+
+  if (!buildConfigModule.default) {
+    log(LogLevel.ERROR, `Error: No default export found in build config "${path}".`);
+    process.exit(1);
+    return;
+  }
+
+  const buildConfig = buildConfigModule.default;
+
+  return buildConfig;
 }
 
 /**

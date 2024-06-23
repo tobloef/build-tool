@@ -1,10 +1,9 @@
 /** @import { BuildConfig } from "./src/build-config/index.js" */
 
-import { copy } from "./src/modules/copy.js";
-import { npmInstall } from "./src/modules/npm-install.js";
+import { copy, npmInstall } from "../modules/index.js";
 
 /** @type {BuildConfig} */
-const buildConfig = {
+const webPreset = {
   serve: true,
   watch: true,
   modules: [
@@ -18,4 +17,4 @@ const buildConfig = {
   ],
 };
 
-export default buildConfig;
+export default webPreset;
