@@ -5,9 +5,17 @@
     "module": "nodenext",
     "types": [
       "node"
-    ]
+    ],
+    "noEmit": true,
+    "incremental": true,
+    "tsBuildInfoFile": "cache/jsconfig.tsbuildinfo",
+    "useUnknownInCatchVariables": false
   },
   "exclude": [
     "node_modules"
+  ],
+  "include": [
+    ".d.ts",
+    "src/**/*.js"
   ]
 }

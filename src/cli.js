@@ -1,37 +1,79 @@
 import { pathToFileURL } from "url";
 import { existsSync } from "node:fs";
-import { log, LogLevel } from "./logging.js";
+import { log, LogLevel, useLogLevel } from "./logging.js";
 import { getPackageJson } from "./utils/package.js";
-import { presets } from "./build-configs/index.js";
+import presets from "./presets/index.js";
+import { readFile } from "node:fs/promises";
+import { BuildConfig } from "./build-config.js";
+import { parseArgs } from "node:util";
+import { Module } from "./modules/module.js";
+
+/** @import {Module} from "./modules/module.js"; */
 
 export async function cli() {
-  const buildConfig = await findBuildConfig();
+  const { values: args } = parseArgs({
+    options: {
+      verbose: { type: "boolean" },
+      quiet: { type: "boolean" },
+    },
+    allowPositionals: true,
+  });
 
+  if (args.verbose) {
+    useLogLevel(LogLevel.VERBOSE);
+  }
 
-  // TODO
+  if (args.quiet) {
+    useLogLevel(LogLevel.ERROR);
+  }
+
+  log(LogLevel.INFO, ""); // Ensuring a newline to fix my stupid terminal
+
+  const buildConfig = await getBuildConfig();
+
+  log(LogLevel.VERBOSE, `Using build config: ${JSON.stringify(buildConfig, null, 2)}`);
+
+  await runPipeline(buildConfig.pipeline);
 }
 
-async function findBuildConfig() {
-  const path = process.argv[2] ?? `${process.cwd()}/build-config.js`;
+/**
+ * @return {Promise<BuildConfig>}
+ */
+async function getBuildConfig() {
+  const buildConfigJson = await getBuildConfigJson();
+  return BuildConfig.fromJSON(buildConfigJson);
+}
+
+/**
+ * @return {Promise<any>}
+ */
+async function getBuildConfigJson() {
+  const path = process.argv[2] ?? `${process.cwd()}/build-config.json`;
 
   if (!existsSync(path) && !isPreset(path)) {
     log(
       LogLevel.ERROR,
-      `Error: No build config found in "${path}".` +
+      `No build config found in "${path}".` +
       "\nYou must either:" +
-      "\n  * Have a build-config.js file in the working directory" +
+      "\n  * Have a build-config.json file in the working directory" +
       "\n  * Specify a path to a build config as the first argument" +
       `\n  * Specify a preset as the first argument (available presets: ${Object.keys(presets).join(",")})`,
     );
     process.exit(1);
-    return;
   }
 
   if (isPreset(path)) {
     return presets[path];
   }
 
-  return await readBuildConfig(path);
+  const buildConfigString = await readBuildConfig(path);
+
+  try {
+    return JSON.parse(buildConfigString);
+  } catch (error) {
+    log(LogLevel.ERROR, `Failed to parse build config:\n${error.message}`);
+    process.exit(1);
+  }
 }
 
 /**
@@ -43,33 +85,30 @@ function isPreset(path) {
 }
 
 /**
- * @param {string} path
+ * @param {string} path Path to the build config file.
+ * @returns {Promise<string>} The build config file content.
  */
 async function readBuildConfig(path) {
-  const relativeBuildConfigPath = pathToFileURL(path).href;
-  const buildConfigModule = await import(relativeBuildConfigPath);
-
-  if (!buildConfigModule.default) {
-    log(LogLevel.ERROR, `Error: No default export found in build config "${path}".`);
+  if (!existsSync(path)) {
+    log(LogLevel.ERROR, `Build config file not found at "${path}".`);
     process.exit(1);
-    return;
   }
 
-  const buildConfig = buildConfigModule.default;
+  const buildConfigString = await readFile(path, { encoding: "utf-8" });
 
-  return buildConfig;
+  return buildConfigString;
 }
 
 /**
  * Check if the current module was called directly from the command line and not imported from another module.
  * @param rootModuleUrl {string} Obtained by calling `import.meta.url` in the root module.
- * @returns {boolean}
+ * @returns {Promise<boolean>}
  */
-export function isCli(rootModuleUrl) {
+export async function isCli(rootModuleUrl) {
   const calledScript = pathToFileURL(process.argv[1]).href;
 
   // Could be called like "node ." or "node build-tool"
-  const packageJson = getPackageJson();
+  const packageJson = await getPackageJson();
 
   if (typeof packageJson.main !== "string") {
     throw new Error(`Expected package.json "main" property to be a string.`);
@@ -85,4 +124,27 @@ export function isCli(rootModuleUrl) {
   );
 
   return result;
+}
+
+/**
+ *
+ * @param {Module[]} pipeline
+ * @return {Promise<void>}
+ */
+async function runPipeline(pipeline) {
+  log(LogLevel.INFO, "Running build pipeline:");
+
+  const startTime = performance.now();
+
+  for (const module of pipeline) {
+    if (module.label) {
+      log(LogLevel.INFO, ` ${module.label}`);
+    }
+    await module.run();
+  }
+
+  const endTime = performance.now();
+  const elapsedSeconds = (endTime - startTime) / 1000;
+
+  log(LogLevel.INFO, ` ✅ Build completed in ${elapsedSeconds.toFixed(3)} seconds`);
 }

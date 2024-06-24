@@ -1,12 +1,11 @@
-import { existsSync, readFileSync } from "fs";
+import { readFile } from "node:fs/promises";
 
 /**
  * Find, read, and parse the package.json file.
- * @returns {Record<string, unknown>}
+ * @returns {Promise<Record<string, unknown>>}
  */
-export function getPackageJson() {
-  const path = findPackageJsonPath();
-  const file = readFileSync(path, { encoding: "utf-8" });
+export async function getPackageJson() {
+  const file = await findPackageJson();
   const parsed = JSON.parse(file);
 
   return parsed;
@@ -14,16 +13,20 @@ export function getPackageJson() {
 
 /**
  * Traverse folder tree upwards until we find a package.json.
- * @returns {string} Path of found package.json
+ * @returns {Promise<string>} The contents of the package.json file.
  */
-function findPackageJsonPath() {
+async function findPackageJson() {
   let currentDir = import.meta.dirname;
 
   while (currentDir !== "") {
     const path = `${currentDir}/package.json`;
 
-    if (existsSync(path)) {
-      return path;
+    try {
+      return await readFile(path, { encoding: "utf-8" });
+    } catch (error) {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
     }
 
     currentDir = currentDir.split("/").slice(0, -1).join("/");

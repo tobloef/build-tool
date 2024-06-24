@@ -1,11 +1,11 @@
 const OutputFormat = {
-  Reset: "\x1b[0m",
-  Bold: "\x1b[1m",
-  NoBold: "\x1b[21m",
-  DefaultColor: "\x1b[39m",
-  Red: "\x1b[31m",
-  Green: "\x1b[32m",
-  Yellow: "\x1b[33m",
+  RESET: "\x1b[0m",
+  DEFAULT_COLOR: "\x1b[39m",
+  BOLD: "\x1b[1m",
+  NO_BOLD: "\x1b[21m",
+  RED: "\x1b[31m",
+  GREEN: "\x1b[32m",
+  YELLOW: "\x1b[33m",
 };
 
 /**
@@ -22,25 +22,25 @@ export const LogLevel = {
     level: 0,
     name: "Verbose",
     stream: process.stdout,
-    color: OutputFormat.DefaultColor,
+    color: OutputFormat.DEFAULT_COLOR,
   },
   INFO: {
     level: 1,
     name: "Info",
     stream: process.stdout,
-    color: OutputFormat.DefaultColor,
+    color: OutputFormat.DEFAULT_COLOR,
   },
   WARNING: {
     level: 2,
     name: "Warning",
     stream: process.stderr,
-    color: OutputFormat.Yellow,
+    color: OutputFormat.YELLOW,
   },
   ERROR: {
     level: 3,
     name: "Error",
     stream: process.stderr,
-    color: OutputFormat.Red,
+    color: OutputFormat.RED,
   },
 };
 
@@ -71,5 +71,5 @@ export function log(level, message, { noNewline = false } = {}) {
     message += "\n";
   }
 
-  level.stream.write(level.color + message + OutputFormat.Reset);
+  level.stream.write(level.color + message + OutputFormat.RESET);
 }

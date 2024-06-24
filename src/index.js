@@ -1,8 +1,11 @@
 import { cli, isCli } from "./cli.js";
+import { suppressExperimentalWarnings } from "./utils/suppress-experimental-warnings.js";
 
-export * from "./modules/index.js";
+export * from "./presets/index.js";
 
-if (isCli(import.meta.url)) {
+suppressExperimentalWarnings();
+
+if (await isCli(import.meta.url)) {
   await cli();
 }
 
