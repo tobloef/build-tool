@@ -24,7 +24,7 @@ export class BuildConfig {
 export async function getBuildConfig() {
   const buildConfigPath = await getBuildConfigPath();
 
-  const imported = await import(pathToFileURL(buildConfigPath));
+  const imported = await import(pathToFileURL(buildConfigPath).href);
 
   if (!imported.default) {
     throw new Error("No default export found in build config");
