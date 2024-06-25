@@ -13,8 +13,13 @@ export const buildEvents = {
 /**
  * @template T
  * @typedef {Object} BuildEventType
- * @property {(listener: (event: BuildEvent<T>) => void) => Unsubscribe} subscribe
+ * @property {(listener: BuildEventListener<T>) => Unsubscribe} subscribe
  * @property {(event: T) => void} publish
+ */
+
+/**
+ * @template T
+ * @typedef {(event: BuildEvent<T>) => Promise<void>} BuildEventListener
  */
 
 /**

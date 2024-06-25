@@ -1,6 +1,10 @@
 import { Module } from "./module.js";
 import { exec } from "node:child_process";
 import { getLogLevel, log, LogLevel } from "../logging.js";
+import { buildEvents } from "../events.js";
+import { join } from "node:path";
+
+/** @import { BuildEventListener } from "../events.js"; */
 
 /**
  * Installs package dependencies using npm.
@@ -49,6 +53,22 @@ export class NpmInstall extends Module {
   }
 
   async runContinuously() {
-    // TODO
+    /** @type {BuildEventListener<string>} */
+    const handler = async (event) => {
+      const path = event.data;
+
+      if (join(this.directory ?? "", "package.json") === path) {
+        log(LogLevel.VERBOSE, "Detected package.json change");
+        await this.runOnce();
+      }
+
+      if (join(this.directory ?? "", "package-lock.json") === path) {
+        log(LogLevel.VERBOSE, "Detected package-lock.json change");
+        await this.runOnce();
+      }
+    };
+
+    buildEvents.fileUpdated.subscribe(handler);
+    buildEvents.fileAdded.subscribe(handler);
   }
 }
