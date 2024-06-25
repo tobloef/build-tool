@@ -1,5 +1,6 @@
 import { Module } from "./module.js";
 import fs from "fs/promises";
+import { join } from "node:path";
 
 /**
  * Copies files from one directory to another, preserving the directory structure.
@@ -44,7 +45,7 @@ export class Copy extends Module {
         continue;
       }
 
-      const fullPath = `${file.parentPath}/${file.name}`;
+      const fullPath = join(file.parentPath, file.name);
       const relativePath = fullPath.replace(this.from, "");
       const matchesRegex = this.files?.some((regex) => regex.test(relativePath)) ?? true;
 
@@ -52,8 +53,8 @@ export class Copy extends Module {
         continue;
       }
 
-      const fullDestinationPath = `${this.to}/${relativePath}`;
-      const destinationDirectory = fullDestinationPath.replace(`/${file.name}`, "");
+      const fullDestinationPath = join(this.to, relativePath);
+      const destinationDirectory = fullDestinationPath.replace(/[\/\\][^\/\\]+$/, "");
 
       await fs.mkdir(destinationDirectory, { recursive: true });
 

@@ -2,6 +2,8 @@
 import { log, LogLevel } from "./logging.js";
 import { isPreset, presets } from "./presets/index.js";
 import { fileExists } from "./utils/file-exists.js";
+import { join } from "node:path";
+import { pathToFileURL } from "url";
 
 export class BuildConfig {
   /** @type {Module[]} */
@@ -22,7 +24,7 @@ export class BuildConfig {
 export async function getBuildConfig() {
   const buildConfigPath = await getBuildConfigPath();
 
-  const imported = await import(buildConfigPath);
+  const imported = await import(pathToFileURL(buildConfigPath));
 
   if (!imported.default) {
     throw new Error("No default export found in build config");
@@ -35,7 +37,7 @@ export async function getBuildConfig() {
  * @return {Promise<string>}
  */
 async function getBuildConfigPath() {
-  const path = process.argv[2] ?? `${process.cwd()}/build-config.js`;
+  const path = process.argv[2] ?? join(process.cwd(), "build-config.js");
 
   if (!await fileExists(path) && !isPreset(path)) {
     log(

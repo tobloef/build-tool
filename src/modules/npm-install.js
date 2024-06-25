@@ -27,11 +27,11 @@ export class NpmInstall extends Module {
     const logLevel = getLogLevel();
 
     if (logLevel <= LogLevel.VERBOSE) {
-      childProcess.stdout.pipe(process.stdout);
+      childProcess.stdout?.pipe(process.stdout);
     }
 
     if (logLevel <= LogLevel.ERROR) {
-      childProcess.stderr.pipe(process.stderr);
+      childProcess.stderr?.pipe(process.stderr);
     }
 
     try {

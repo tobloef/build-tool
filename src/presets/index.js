@@ -1,5 +1,7 @@
+import { join } from "node:path";
+
 export const presets = {
-  web: `${import.meta.dirname}/web.js`,
+  web: join(import.meta.dirname, "web.js"),
 };
 
 /**

@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 /**
  * Find, read, and parse the package.json file.
@@ -19,7 +20,7 @@ async function findPackageJson() {
   let currentDir = import.meta.dirname;
 
   while (currentDir !== "") {
-    const path = `${currentDir}/package.json`;
+    const path = join(currentDir, "package.json");
 
     try {
       return await readFile(path, { encoding: "utf-8" });
@@ -29,7 +30,7 @@ async function findPackageJson() {
       }
     }
 
-    currentDir = currentDir.split("/").slice(0, -1).join("/");
+    currentDir = join(...currentDir.split(/[\\\/]/).slice(0, -1));
   }
 
   throw Error(`No package.json file found in "${import.meta.dirname} or any of its parent folders."`);
