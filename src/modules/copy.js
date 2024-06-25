@@ -1,73 +1,67 @@
-import { buildEvents, EventTypes } from "../events.js";
-import { getOptionalString, getOptionalStringArray, getRequiredString } from "../utils/parsing.js";
 import { Module } from "./module.js";
-import { copyFile, cp, glob, lstat, mkdir } from "node:fs/promises";
+import fs from "fs/promises";
 
 /**
  * Copies files from one directory to another, preserving the directory structure.
  */
-export class CopyModule extends Module {
-  static type = "copy";
-
+export class Copy extends Module {
   /** @type {string} */
   from;
   /** @type {string} */
   to;
-  /** @type {string[]} */
+  /** @type {RegExp[] | undefined} */
   files;
 
   /**
    *
    * @param {Object} options
-   * @param {string} [options.label] The label for the module.
+   * @param {string} options.label The label for the module.
    * @param {string} options.from The source directory to copy files from.
    * @param {string} options.to The destination directory to copy files to.
-   * @param {string[]} [options.files] The glob patterns to match the files to copy. Otherwise, all files are copied.
+   * @param {RegExp[]} [options.files] The RegExp patterns to match the files to copy. Otherwise, all files are copied.
+   * @param {boolean} [options.recursive=true] Whether to copy files recursively from subdirectories.
    */
   constructor(options) {
     super(options);
     this.from = options.from;
     this.to = options.to;
-    this.files = options.files ?? ["**/*"];
-
-
-    buildEvents.addEventListener(EventTypes.FILE_CHANGED, (event) => {
-      // TODO: Copy the file to the destination if it matches a glob pattern.
-    });
+    this.files = options.files;
+    this.recursive = options.recursive ?? true;
   }
 
-  /**
-   * @param {any} json
-   * @return {CopyModule}
-   */
-  static fromJson(json) {
-    try {
-      return new CopyModule({
-        label: getOptionalString(json, "label"),
-        from: getRequiredString(json, "from"),
-        to: getRequiredString(json, "to"),
-        files: getOptionalStringArray(json, "files"),
-      });
-    } catch (error) {
-      throw new Error(`Error parsing "${this.type}" module: ${error.message}`);
-    }
-  }
+  async runOnce() {
+    // Get all files in the source directory recursively
+    // For each file, check if the path matches any of the RegExp patterns
+    // If it does, copy the file to the destination directory, preserving the directory structure
 
-  async run() {
-    for (const file of this.files) {
-      const matches = await glob(file, { cwd: this.from });
-      for await (const match of matches) {
-        const source = `${this.from}/${match}`;
-        const destination = `${this.to}/${match}`;
-        const stats = await lstat(source);
-        if (stats.isDirectory()) {
-          await cp(source, destination, { recursive: true });
-        } else {
-          const destinationDir = destination.substring(0, destination.lastIndexOf("/"));
-          await mkdir(destinationDir, { recursive: true });
-          await copyFile(source, destination);
-        }
+    const files = await fs.readdir(
+      this.from,
+      { withFileTypes: true, recursive: this.recursive },
+    );
+
+    for (const file of files) {
+      if (file.isDirectory()) {
+        continue;
       }
+
+      const fullPath = `${file.parentPath}/${file.name}`;
+      const relativePath = fullPath.replace(this.from, "");
+      const matchesRegex = this.files?.some((regex) => regex.test(relativePath)) ?? true;
+
+      if (!matchesRegex) {
+        continue;
+      }
+
+      const fullDestinationPath = `${this.to}/${relativePath}`;
+      const destinationDirectory = fullDestinationPath.replace(`/${file.name}`, "");
+
+      await fs.mkdir(destinationDirectory, { recursive: true });
+
+      await fs.copyFile(fullPath, fullDestinationPath);
     }
+  }
+
+  async runContinuously() {
+    // TODO
   }
 }

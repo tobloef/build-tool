@@ -1,9 +1,11 @@
-import { createRequire } from "module";
-
-const web = createRequire(import.meta.url)("./web.json");
-
-const presets = {
-  web,
+export const presets = {
+  web: `${import.meta.dirname}/web.js`,
 };
 
-export default presets;
+/**
+ * @param {string} path
+ * @returns {path is keyof presets}
+ */
+export function isPreset(path) {
+  return Object.keys(presets).includes(path);
+}

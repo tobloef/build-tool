@@ -51,8 +51,16 @@ let currentLogLevel = LogLevel.INFO;
  * Set the current log level.
  * @param level {LogLevelType}
  */
-export function useLogLevel(level) {
+export function setLogLevel(level) {
   currentLogLevel = level;
+}
+
+/**
+ * Get the current log level.
+ * @returns {LogLevelType}
+ */
+export function getLogLevel() {
+  return currentLogLevel;
 }
 
 /**

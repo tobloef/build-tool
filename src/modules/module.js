@@ -2,14 +2,12 @@
  * @abstract
  */
 export class Module {
-  static type = "unknown module";
-
-  /** @type {string | undefined} */
+  /** @type {string} */
   label;
 
   /**
    * @param {Object} options
-   * @param {string} [options.label] The label for the module.
+   * @param {string} options.label The label for the module.
    */
   constructor(options) {
     this.label = options.label;
@@ -17,18 +15,17 @@ export class Module {
 
   /**
    * @abstract
-   * @param {any} json
-   * @return {Module}
+   * @return {Promise<void>}
    */
-  static fromJSON(json) {
-    throw new Error(`Cannot call abstract method "fromJSON". Override it in a subclass.`);
+  async runOnce() {
+    throw new Error(`Cannot call abstract method "run". Override it in a subclass.`);
   }
 
   /**
    * @abstract
    * @return {Promise<void>}
    */
-  async run() {
-    throw new Error(`Cannot call abstract method "run". Override it in a subclass.`);
+  async runContinuously() {
+    throw new Error(`Cannot call abstract method "runContinuously". Override it in a subclass.`);
   }
 }

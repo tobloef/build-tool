@@ -1,9 +1,10 @@
+// @ts-nocheck
+// noinspection JSValidateTypes
+
 export function suppressExperimentalWarnings() {
   const originalEmit = process.emit;
 
-  process.emit = function (...args) {
-    const [name, data] = args;
-
+  process.emit = function (name, data) {
     if (
       name === `warning` &&
       typeof data === `object` &&
@@ -11,7 +12,7 @@ export function suppressExperimentalWarnings() {
     ) {
       return false;
     }
-    
+
     return originalEmit.apply(process, arguments);
   };
 }

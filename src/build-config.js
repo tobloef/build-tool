@@ -1,10 +1,11 @@
 /** @import {Module} from "./modules/module.js"; */
-import { CopyModule } from "./modules/copy.js";
-import { NpmInstallModule } from "./modules/npm-install.js";
+import { log, LogLevel } from "./logging.js";
+import { isPreset, presets } from "./presets/index.js";
+import { fileExists } from "./utils/file-exists.js";
 
 export class BuildConfig {
   /** @type {Module[]} */
-  pipeline;
+  static pipeline;
 
   /**
    *  @param {Object} options
@@ -13,36 +14,45 @@ export class BuildConfig {
   constructor(options) {
     this.pipeline = options.pipeline;
   }
-
-
-  /**
-   * @param {any} json
-   * @return {BuildConfig}
-   */
-  static fromJSON(json) {
-    if (!Array.isArray(json.pipeline)) {
-      throw new Error(`Expected "pipeline" to be an array of modules.`);
-    }
-
-    const pipeline = json.pipeline.map((/** @type {any} */ moduleJson) => {
-      if (!moduleJson.module) {
-        throw new Error(`Expected module to have a "module" property.`);
-      }
-
-      const options = { label: moduleJson.label, ...moduleJson.options };
-
-      switch (moduleJson.module) {
-        case CopyModule.type:
-          return CopyModule.fromJson(options);
-        case NpmInstallModule.type:
-          return NpmInstallModule.fromJson(options);
-        default:
-          throw new Error(`Unknown module: ${moduleJson.module}`);
-      }
-    });
-
-    return new BuildConfig({
-      pipeline,
-    });
-  }
 }
+
+/**
+ * @return {Promise<BuildConfig>}
+ */
+export async function getBuildConfig() {
+  const buildConfigPath = await getBuildConfigPath();
+
+  const imported = await import(buildConfigPath);
+
+  if (!imported.default) {
+    throw new Error("No default export found in build config");
+  }
+
+  return imported.default;
+}
+
+/**
+ * @return {Promise<string>}
+ */
+async function getBuildConfigPath() {
+  const path = process.argv[2] ?? `${process.cwd()}/build-config.js`;
+
+  if (!await fileExists(path) && !isPreset(path)) {
+    log(
+      LogLevel.ERROR,
+      `No build config found in "${path}".` +
+      "\nYou must either:" +
+      "\n  * Have a build-config.js file in the working directory" +
+      "\n  * Specify a path to a build config as the first argument" +
+      `\n  * Specify a preset as the first argument (available presets: ${Object.keys(presets).join(",")})`,
+    );
+    process.exit(1);
+  }
+
+  if (isPreset(path)) {
+    return presets[path];
+  }
+
+  return path;
+}
+

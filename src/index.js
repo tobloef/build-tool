@@ -1,5 +1,6 @@
-import { cli, isCli } from "./cli.js";
+import { cli } from "./cli.js";
 import { suppressExperimentalWarnings } from "./utils/suppress-experimental-warnings.js";
+import { isCli } from "./utils/is-cli.js";
 
 export * from "./presets/index.js";
 
