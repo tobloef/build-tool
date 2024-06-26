@@ -1,17 +1,26 @@
 ![GitHub Banner Template](https://github.com/tobloef/build-tool/assets/12204005/641c2ea4-991a-47b6-a4cd-1958813f9c9b)
 
-### A modular build tool for the web.
+### Modular build system for web projects, written in Node.js 📦
+
+## Goals
+
+* **Understand the system:** Fully understand the process by creating it from scratch, allowing for quickly making highly custom behaviour.
+* **High extensibility:** Must be usable across many projects, with the possibility of creating project-specific modules.
+* **Zero runtime dependencies:** Explore what modern Node.js and JavaScript are capable of natively.
+* **No build step:** Plain JavaScript with JSDoc annotations for type checking.
+
+> [!WARNING]
+> This project was created primarily for personal use. I would not necessarily recommend using it in any of your own applications (but let me know if you do!).
 
 ## Features
 
-* Feature A
-* Feature B
-* Feature C
-
-> [!WARNING]
-> This project was created primarily for personal use. I would not recommend using it in any production application.
+* Configuration-driven pipelines ([see example pipelines]()).
+* Extensible module system ([list of built-in modules]()).
+* Build once or continuously watch for changes.
+* Support for both live reloading (refresh page) and hot reloading (swap changed assets out on the fly).
 
 ## Usage
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
+```
+// TODO: Coming soon!
+```
