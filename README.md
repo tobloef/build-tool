@@ -4,10 +4,10 @@
 
 ## Goals
 
-* **Understand the system:** Fully understand the process by creating it from scratch, allowing for quickly making highly custom behaviour.
-* **High extensibility:** Must be usable across many projects, with the possibility of creating project-specific modules.
-* **Zero runtime dependencies:** Explore what modern Node.js and JavaScript are capable of natively.
-* **No build step:** Plain JavaScript with JSDoc annotations for type checking.
+* **Understand the system:** Fully understand the system by creating it from scratch, allowing for quickly making highly custom behaviour.
+* **High extensibility:** Must be usable across many projects, with the possibility of creating project-specific extensions.
+* **Zero external dependencies:** Explore what modern Node.js is capable of natively.
+* **Vanilla JS:** Plain JavaScript with [JSDoc](https://github.com/jsdoc/jsdoc) annotations for type checking, no transpilation step necessary.
 
 > [!WARNING]
 > This project was created primarily for personal use. I would not necessarily recommend using it in any of your own applications (but let me know if you do!).
@@ -22,5 +22,5 @@
 ## Usage
 
 ```
-// TODO: Coming soon!
+// TODO
 ```
