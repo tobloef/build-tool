@@ -6,7 +6,7 @@
 
 * **Reinvent the wheel:** Fully understand the system by creating it from scratch, allowing for quickly making highly custom behaviour.
 * **High extensibility:** Must be usable across many projects, with the possibility of creating project-specific extensions.
-* **Zero third-party dependencies:** Explore what modern Node.js is capable of natively (except any libraries I create myself of course!).
+* **Zero third-party dependencies:** Explore what modern Node.js is capable of natively (except my own libraries of course!).
 * **Vanilla JS:** Plain JavaScript with [JSDoc](https://github.com/jsdoc/jsdoc) annotations for type checking, no transpilation step necessary.
 
 > [!WARNING]
