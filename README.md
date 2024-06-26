@@ -1,4 +1,4 @@
-![GitHub Banner Template](https://github.com/tobloef/build-tool/assets/12204005/641c2ea4-991a-47b6-a4cd-1958813f9c9b)
+![Build Tool Banner](https://github.com/tobloef/build-tool/assets/12204005/641c2ea4-991a-47b6-a4cd-1958813f9c9b)
 
 ### Modular build system for web projects, written in Node.js 📦
 
