@@ -5,7 +5,7 @@
 ## Goals
 
 * This project follows my [Wheel Reinventor's Principles](https://github.com/tobloef/wheel-reinventors-principles): In short, it's made from scratch for learning and to tailor it to my specific use cases.
-* **High extensibility:** Must be usable across many projects, with the possibility of creating project-specific extensions.
+* **Extensibility:** Must be usable across multiple projects, with the possibility of creating project-specific extensions.
 * **Vanilla JS:** Plain JavaScript with [JSDoc](https://github.com/jsdoc/jsdoc) annotations for type checking, no transpilation step necessary.
 
 > [!WARNING]
