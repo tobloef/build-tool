@@ -105,7 +105,7 @@ export class NpmInstall extends BuildModule {
             await debouncedRun();
           } catch (error) {
             if (error instanceof BuildError) {
-              log(LogLevel.ERROR, `${error.message}. Will retry on next change.`);
+              log(LogLevel.ERROR, `${error.message}. Skipping npm install until the issue is resolved.`);
             } else {
               throw error;
             }
