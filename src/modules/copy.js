@@ -66,8 +66,12 @@ export class Copy extends BuildModule {
     });
   }
 
-  async #copyIfMatch(fullPath) {
-    const relativePath = fullPath.replace(this.from, "");
+  /**
+   * @param {string} path
+   * @return {Promise<void>}
+   */
+  async #copyIfMatch(path) {
+    const relativePath = path.replace(this.from, "");
     const matchesRegex = this.files?.some((regex) => regex.test(relativePath)) ?? true;
 
     if (!matchesRegex) {
@@ -79,7 +83,7 @@ export class Copy extends BuildModule {
 
     await fs.mkdir(destinationDirectory, { recursive: true });
 
-    log(LogLevel.VERBOSE, `Copying ${fullPath} to ${fullDestinationPath}`);
-    await fs.copyFile(fullPath, fullDestinationPath);
+    log(LogLevel.VERBOSE, `Copying ${path} to ${fullDestinationPath}`);
+    await fs.copyFile(path, fullDestinationPath);
   }
 }

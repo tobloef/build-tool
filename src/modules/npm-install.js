@@ -15,7 +15,9 @@ export class NpmInstall extends BuildModule {
   /** @type {string | undefined} */
   directory;
 
+  /** @type {string | null} */
   #packageJsonCache = null;
+  /** @type {string | null} */
   #packageLockJsonCache = null;
 
   /**
@@ -29,8 +31,8 @@ export class NpmInstall extends BuildModule {
 
   async run() {
 
-    const packageJson = await readFile(join(this.directory, "package.json"), "utf-8");
-    const packageLockJson = await readFile(join(this.directory, "package-lock.json"), "utf-8");
+    const packageJson = await readFile(join(this.directory ?? "", "package.json"), "utf-8");
+    const packageLockJson = await readFile(join(this.directory ?? "", "package-lock.json"), "utf-8");
 
     if (this.#packageJsonCache === packageJson && this.#packageLockJsonCache === packageLockJson) {
       log(LogLevel.VERBOSE, "Skipping npm install because package files haven't changed");
@@ -46,11 +48,11 @@ export class NpmInstall extends BuildModule {
     log(LogLevel.VERBOSE, `Executing "${command}" in ${this.directory}`);
     const childProcess = await exec(command, { cwd: this.directory });
 
-    childProcess.stdout.on("data", (data) => {
+    childProcess.stdout?.on("data", (data) => {
       log(LogLevel.VERBOSE, data);
     });
 
-    childProcess.stderr.on("data", (data) => {
+    childProcess.stderr?.on("data", (data) => {
       log(LogLevel.ERROR, data);
     });
 

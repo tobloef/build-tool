@@ -3,6 +3,8 @@ import { watch } from "fs/promises";
 import { buildEvents } from "./events.js";
 import { debounce } from "./utils/debounce.js";
 
+/** @import { BuildConfig } from "./build-config.js"; */
+
 /**
  * @param {BuildConfig} buildConfig
  * @return {Promise<void>}
@@ -50,7 +52,11 @@ async function watchFiles(buildConfig) {
   let perPathDebouncedHandlers = new Map();
 
   for await (const event of watch(".", { recursive: true })) {
-    const { eventType, filename } = event;
+    const { filename } = event;
+
+    if (filename === null) {
+      continue;
+    }
 
     if (filename.endsWith("~")) {
       continue;
