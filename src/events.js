@@ -2,7 +2,7 @@ export const buildEvents = {
   /** @type {BuildEventType<string>} */
   fileChanged: createBuildEventType(),
   /** @type {BuildEventType<void>} */
-  reloadRequested: createBuildEventType(),
+  liveReload: createBuildEventType(),
 };
 
 

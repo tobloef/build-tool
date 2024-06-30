@@ -3,13 +3,6 @@
  */
 export class BuildModule {
   /**
-   * @param {Object} options
-   */
-  constructor(options) {
-
-  }
-
-  /**
    * @abstract
    * @return {Promise<void>}
    */

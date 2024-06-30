@@ -1,4 +1,4 @@
-import { log, LogLevel } from "./logging.js";
+import { log, LogLevel } from "./utils/logging.js";
 import { watch } from "fs/promises";
 import { buildEvents } from "./events.js";
 import { debounce } from "./utils/debounce.js";
@@ -29,13 +29,7 @@ export async function runPipelineOnce(buildConfig) {
  * @return {Promise<void>}
  */
 export async function runPipelineContinuously(buildConfig) {
-  log(LogLevel.INFO, "🔧 Running initial build");
-
-  for (const module of buildConfig.pipeline) {
-    await module.run();
-  }
-
-  log(LogLevel.INFO, "👀 Finished initial build, watching for changes...");
+  log(LogLevel.INFO, "👀 Watching files for changes...");
 
   void watchFiles(buildConfig);
 

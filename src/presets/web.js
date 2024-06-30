@@ -5,8 +5,6 @@ import { NpmInstall } from "../modules/npm-install.js";
 const web = new BuildConfig({
   pipeline: [
     new Copy({
-      from: "src",
-      to: "build",
       files: [
         /.+.js$/,
         /.+.html$/,
@@ -14,16 +12,13 @@ const web = new BuildConfig({
     }),
     new Copy({
       from: ".",
-      to: "build",
       recursive: false,
       files: [
         /package.json/,
         /package-lock.json/,
       ],
     }),
-    new NpmInstall({
-      directory: "build",
-    }),
+    new NpmInstall(),
   ],
 });
 

@@ -1,10 +1,13 @@
 import { BuildModule } from "./build-module.js";
 import { exec } from "node:child_process";
-import { log, LogLevel } from "../logging.js";
+import { log, LogLevel } from "../utils/logging.js";
 import { buildEvents } from "../events.js";
 import { join } from "node:path";
 import { debounce } from "../utils/debounce.js";
 import { readFile } from "node:fs/promises";
+import { DEFAULT_BUILD_DIR } from "../constants.js";
+import { fileExists } from "../utils/file-exists.js";
+import BuildError from "../build-error.js";
 
 /** @import { BuildEventListener } from "../events.js"; */
 
@@ -12,8 +15,8 @@ import { readFile } from "node:fs/promises";
  * Installs package dependencies using npm.
  */
 export class NpmInstall extends BuildModule {
-  /** @type {string | undefined} */
-  directory;
+  /** @type {string} */
+  directory = DEFAULT_BUILD_DIR;
 
   /** @type {string | null} */
   #packageJsonCache = null;
@@ -21,25 +24,30 @@ export class NpmInstall extends BuildModule {
   #packageLockJsonCache = null;
 
   /**
-   * @param {Object} options
-   * @param {string} options.directory The directory to run `npm install` in. Should be the directory containing the package.json file.
+   * @param {Object} [options]
+   * @param {string} [options.directory]
    */
   constructor(options) {
-    super(options);
-    this.directory = options.directory;
+    super();
+    this.directory = options?.directory ?? this.directory;
   }
 
   async run() {
+    log(LogLevel.INFO, `📦 Installing npm dependencies in "${this.directory}"`);
 
-    const packageJson = await readFile(join(this.directory ?? "", "package.json"), "utf-8");
-    const packageLockJson = await readFile(join(this.directory ?? "", "package-lock.json"), "utf-8");
+    const packageJsonPath = join(this.directory, "package.json");
+    const packageLockJsonPath = join(this.directory, "package-lock.json");
 
-    if (this.#packageJsonCache === packageJson && this.#packageLockJsonCache === packageLockJson) {
-      log(LogLevel.VERBOSE, "Skipping npm install because package files haven't changed");
-      return;
+    if (!await fileExists(packageJsonPath)) {
+      throw new BuildError(`No package.json found in "${this.directory}"`);
     }
 
-    log(LogLevel.INFO, `📦 Installing npm dependencies in ${this.directory}`);
+    if (!await fileExists(packageLockJsonPath)) {
+      throw new BuildError(`No package-lock.json found in "${this.directory}"`);
+    }
+
+    const packageJson = await readFile(packageJsonPath, "utf-8");
+    const packageLockJson = await readFile(packageLockJsonPath, "utf-8");
 
     this.#packageJsonCache = packageJson;
     this.#packageLockJsonCache = packageLockJson;
@@ -65,25 +73,48 @@ export class NpmInstall extends BuildModule {
       if (exitCode !== 0) {
         throw new Error(`Got non-zero exit code ${exitCode}`);
       }
+
+      buildEvents.liveReload.publish();
     } catch (error) {
       throw new Error(`Failed to install dependencies`);
     }
   }
 
   async watch() {
-    const debouncedRun = debounce(() => this.run(), 100);
+    const debouncedRun = debounce(async () => this.run(), 100);
 
     /** @type {BuildEventListener<string>} */
     const handler = async (event) => {
-      const path = event.data;
+      /**
+       * @param {string} filename
+       * @param {string | null} cache
+       * @return {Promise<void>}
+       */
+      const checkAgainstFile = async (filename, cache) => {
+        const fullPath = join(this.directory, filename);
 
-      if (join(this.directory ?? "", "package.json") === path) {
-        await debouncedRun();
-      }
+        if (fullPath === event.data) {
+          if (await fileExists(fullPath)) {
+            const fileData = await readFile(fullPath, "utf-8");
+            if (fileData === cache) return;
+          }
 
-      if (join(this.directory ?? "", "package-lock.json") === path) {
-        await debouncedRun();
-      }
+          log(LogLevel.VERBOSE, `File "${filename}" changed, running npm install`);
+
+          try {
+            await debouncedRun();
+          } catch (error) {
+            if (error instanceof BuildError) {
+              log(LogLevel.ERROR, `${error.message}. Will retry on next change.`);
+            } else {
+              throw error;
+            }
+          }
+        }
+      };
+
+      await checkAgainstFile("package.json", this.#packageJsonCache);
+      await checkAgainstFile("package-lock.json", this.#packageLockJsonCache);
     };
 
     buildEvents.fileChanged.subscribe(handler);

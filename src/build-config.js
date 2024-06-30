@@ -1,13 +1,18 @@
 /** @import {BuildModule} from "./modules/build-module.js"; */
-import { log, LogLevel } from "./logging.js";
+import { log, LogLevel } from "./utils/logging.js";
 import { isPreset, presets } from "./presets/index.js";
 import { fileExists } from "./utils/file-exists.js";
 import { join } from "node:path";
 import { pathToFileURL } from "url";
+import { DEFAULT_BUILD_DIR } from "./constants.js";
 
 export class BuildConfig {
   /** @type {boolean} */
+  clean = false;
+  /** @type {boolean} */
   watch = false;
+  /** @type {ServeOptions | null} */
+  serve = null;
   /** @type {string[]} */
   ignored_folders = ["node_modules", ".git"];
   /** @type {BuildModule[]} */
@@ -15,13 +20,17 @@ export class BuildConfig {
 
   /**
    *  @param {Object} options
-   *  @param {BuildModule[]} options.pipeline The modules to run in the build pipeline.
-   *  @param {boolean} [options.watch] Whether to watch for changes and rebuild.
-   *  @param {string[]} [options.ignored_folders] The folders to ignore when watching for changes.
+   *  @param {BuildModule[]} options.pipeline
+   *  @param {boolean} [options.clean]
+   *  @param {boolean} [options.watch]
+   *  @param {ServeOptions} [options.serve]
+   *
+   *  @param {string[]} [options.ignored_folders]
    */
   constructor(options) {
     this.pipeline = options.pipeline ?? this.pipeline;
     this.watch = options.watch ?? this.watch;
+    this.serve = options.serve ?? this.serve;
     this.ignored_folders = options.ignored_folders ?? this.ignored_folders;
   }
 }
@@ -66,3 +75,18 @@ async function getBuildConfigPath() {
   return path;
 }
 
+/**
+ * @typedef {Object} ServeOptions
+ * @property {number} port
+ * @property {string} address
+ * @property {string} directory
+ * @property {boolean} [live]
+ * @property {boolean} [hot]
+ */
+
+/** @type {ServeOptions} */
+export const DEFAULT_SERVE_OPTIONS = {
+  port: 8080,
+  address: "localhost",
+  directory: DEFAULT_BUILD_DIR,
+};
