@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { log, LogLevel, setLogLevel } from "./utils/logging.js";
 import { DEFAULT_SERVE_OPTIONS, getBuildConfig } from "./build-config.js";
 import { inspect, parseArgs } from "node:util";
@@ -8,7 +10,7 @@ import { createWebSocketServer } from "./server/websocket-server.js";
 /** @import { BuildConfig, ServeOptions } from "./build-config.js"; */
 /** @import { Server } from "node:http"; */
 
-export async function cli() {
+async function cli() {
   const args = getArgs();
 
   if (args.verbose) {
@@ -18,7 +20,7 @@ export async function cli() {
   if (args.quiet) {
     setLogLevel(LogLevel.ERROR);
   }
- 
+
   const buildConfig = await getBuildConfig();
 
   // Overwrite build config with CLI args
@@ -83,3 +85,5 @@ async function startServer(serveOptions, server) {
     });
   });
 }
+
+await cli();

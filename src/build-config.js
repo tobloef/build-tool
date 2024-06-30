@@ -54,25 +54,32 @@ export async function getBuildConfig() {
  * @return {Promise<string>}
  */
 async function getBuildConfigPath() {
-  const path = process.argv[2] ?? join(process.cwd(), "build-config.js");
+  const possiblePaths = [
+    process.argv[2],
+    join(process.cwd(), "build-config.js"),
+    join(process.cwd(), "build-config.mjs"),
+  ];
 
-  if (!await fileExists(path) && !isPreset(path)) {
-    log(
-      LogLevel.ERROR,
-      `No build config found in "${path}".` +
-      "\nYou must either:" +
-      "\n  * Have a build-config.js file in the working directory" +
-      "\n  * Specify a path to a build config as the first argument" +
-      `\n  * Specify a preset as the first argument (available presets: ${Object.keys(presets).join(",")})`,
-    );
-    process.exit(1);
+  for (const path of possiblePaths) {
+    if (!await fileExists(path) && !isPreset(path)) {
+      continue;
+    }
+
+    if (isPreset(path)) {
+      return presets[path];
+    }
+
+    return path;
   }
 
-  if (isPreset(path)) {
-    return presets[path];
-  }
-
-  return path;
+  log(
+    LogLevel.ERROR,
+    "No build config found. You must either:" +
+    "\n  * Have a build-config.js (or .mjs) file in the working directory" +
+    "\n  * Specify a path to a build config as the first argument" +
+    `\n  * Specify a preset as the first argument (available presets: ${Object.keys(presets).join(",")})`,
+  );
+  process.exit(1);
 }
 
 /**

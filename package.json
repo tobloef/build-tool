@@ -12,6 +12,9 @@
     "url": "https://gjthub.com/tobloef/build-tool"
   },
   "main": "src/index.js",
+  "bin": {
+    "build-tool": "src/cli.js"
+  },
   "type": "module",
   "scripts": {
     "check": "tsc --project jsconfig.json"
