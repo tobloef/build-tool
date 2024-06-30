@@ -17,9 +17,10 @@ export async function getPackageJson() {
  * @returns {Promise<string>} The contents of the package.json file.
  */
 async function findPackageJson() {
+  let oldDir = null;
   let currentDir = import.meta.dirname;
 
-  while (currentDir !== "") {
+  while (currentDir !== oldDir) {
     const path = join(currentDir, "package.json");
 
     try {
@@ -30,7 +31,8 @@ async function findPackageJson() {
       }
     }
 
-    currentDir = join(...currentDir.split(/[\\\/]/).slice(0, -1));
+    oldDir = currentDir;
+    currentDir = join(currentDir, "..");
   }
 
   throw Error(`No package.json file found in "${import.meta.dirname} or any of its parent folders."`);
