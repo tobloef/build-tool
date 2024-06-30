@@ -1,7 +1,7 @@
 import { log, LogLevel, setLogLevel } from "./logging.js";
 import { getBuildConfig } from "./build-config.js";
-import { parseArgs } from "node:util";
-import { runPipeline } from "./pipeline.js";
+import { inspect, parseArgs } from "node:util";
+import { runPipelineContinuously, runPipelineOnce } from "./pipeline.js";
 
 export async function cli() {
   const args = getArgs();
@@ -18,9 +18,16 @@ export async function cli() {
 
   const buildConfig = await getBuildConfig();
 
-  log(LogLevel.VERBOSE, `Using build config: ${JSON.stringify(buildConfig, null, 2)}`);
+  buildConfig.watch = args.watch ?? buildConfig.watch;
 
-  await runPipeline(buildConfig.pipeline);
+  log(LogLevel.VERBOSE, `Using build config: ${inspect(buildConfig, { depth: null })}`);
+
+  if (buildConfig.watch) {
+    await runPipelineContinuously(buildConfig.pipeline);
+  } else {
+    await runPipelineOnce(buildConfig.pipeline);
+  }
+
 }
 
 function getArgs() {
@@ -28,6 +35,7 @@ function getArgs() {
     options: {
       verbose: { type: "boolean" },
       quiet: { type: "boolean" },
+      watch: { type: "boolean" },
     },
     allowPositionals: true,
   });

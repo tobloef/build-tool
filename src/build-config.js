@@ -1,4 +1,4 @@
-/** @import {Module} from "./modules/module.js"; */
+/** @import {BuildModule} from "./modules/build-module.js"; */
 import { log, LogLevel } from "./logging.js";
 import { isPreset, presets } from "./presets/index.js";
 import { fileExists } from "./utils/file-exists.js";
@@ -6,15 +6,19 @@ import { join } from "node:path";
 import { pathToFileURL } from "url";
 
 export class BuildConfig {
-  /** @type {Module[]} */
-  static pipeline;
+  /** @type {boolean} */
+  watch = false;
+  /** @type {BuildModule[]} */
+  pipeline = [];
 
   /**
    *  @param {Object} options
-   *  @param {Module[]} options.pipeline The modules to run in the build pipeline.
+   *  @param {BuildModule[]} options.pipeline The modules to run in the build pipeline.
+   *  @param {boolean} [options.watch] Whether to watch for changes and rebuild.
    */
   constructor(options) {
-    this.pipeline = options.pipeline;
+    this.pipeline = options.pipeline ?? this.pipeline;
+    this.watch = options.watch ?? this.watch;
   }
 }
 

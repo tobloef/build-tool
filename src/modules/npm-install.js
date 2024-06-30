@@ -1,6 +1,6 @@
-import { Module } from "./module.js";
+import { BuildModule } from "./build-module.js";
 import { exec } from "node:child_process";
-import { getLogLevel, log, LogLevel } from "../logging.js";
+import { log, LogLevel } from "../logging.js";
 import { buildEvents } from "../events.js";
 import { join } from "node:path";
 
@@ -9,13 +9,12 @@ import { join } from "node:path";
 /**
  * Installs package dependencies using npm.
  */
-export class NpmInstall extends Module {
+export class NpmInstall extends BuildModule {
   /** @type {string | undefined} */
   directory;
 
   /**
    * @param {Object} options
-   * @param {string} options.label The label for the module.
    * @param {string} options.directory The directory to run `npm install` in. Should be the directory containing the package.json file.
    */
   constructor(options) {
@@ -23,20 +22,20 @@ export class NpmInstall extends Module {
     this.directory = options.directory;
   }
 
-  async runOnce() {
+  async run() {
+    log(LogLevel.INFO, `📦 Installing npm dependencies in ${this.directory}`);
+
     const command = `npm install --omit=dev`;
     log(LogLevel.VERBOSE, `Executing "${command}" in ${this.directory}`);
     const childProcess = await exec(command, { cwd: this.directory });
 
-    const logLevel = getLogLevel();
+    childProcess.stdout.on("data", (data) => {
+      log(LogLevel.VERBOSE, data);
+    });
 
-    if (logLevel <= LogLevel.VERBOSE) {
-      childProcess.stdout?.pipe(process.stdout);
-    }
-
-    if (logLevel <= LogLevel.ERROR) {
-      childProcess.stderr?.pipe(process.stderr);
-    }
+    childProcess.stderr.on("data", (data) => {
+      log(LogLevel.ERROR, data);
+    });
 
     try {
       const exitCode = await new Promise((resolve, reject) => {
@@ -52,19 +51,19 @@ export class NpmInstall extends Module {
     }
   }
 
-  async runContinuously() {
+  async watch() {
     /** @type {BuildEventListener<string>} */
     const handler = async (event) => {
       const path = event.data;
 
       if (join(this.directory ?? "", "package.json") === path) {
         log(LogLevel.VERBOSE, "Detected package.json change");
-        await this.runOnce();
+        await this.run();
       }
 
       if (join(this.directory ?? "", "package-lock.json") === path) {
         log(LogLevel.VERBOSE, "Detected package-lock.json change");
-        await this.runOnce();
+        await this.run();
       }
     };
 

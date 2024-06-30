@@ -1,11 +1,12 @@
-import { Module } from "./module.js";
+import { BuildModule } from "./build-module.js";
 import fs from "fs/promises";
 import { join } from "node:path";
+import { log, LogLevel } from "../logging.js";
 
 /**
  * Copies files from one directory to another, preserving the directory structure.
  */
-export class Copy extends Module {
+export class Copy extends BuildModule {
   /** @type {string} */
   from;
   /** @type {string} */
@@ -16,7 +17,6 @@ export class Copy extends Module {
   /**
    *
    * @param {Object} options
-   * @param {string} options.label The label for the module.
    * @param {string} options.from The source directory to copy files from.
    * @param {string} options.to The destination directory to copy files to.
    * @param {RegExp[]} [options.files] The RegExp patterns to match the files to copy. Otherwise, all files are copied.
@@ -30,10 +30,12 @@ export class Copy extends Module {
     this.recursive = options.recursive ?? true;
   }
 
-  async runOnce() {
-    // Get all files in the source directory recursively
-    // For each file, check if the path matches any of the RegExp patterns
-    // If it does, copy the file to the destination directory, preserving the directory structure
+  async run() {
+    let logMessage = `📄 Copying files from "${this.from}" to "${this.to}"`;
+    if (this.files) {
+      logMessage += `, matching ${this.files.map((regex) => `"${regex.source}"`).join(", ")}`;
+    }
+    log(LogLevel.INFO, logMessage);
 
     const files = await fs.readdir(
       this.from,
@@ -58,11 +60,12 @@ export class Copy extends Module {
 
       await fs.mkdir(destinationDirectory, { recursive: true });
 
+      log(LogLevel.VERBOSE, `Copying ${fullPath} to ${fullDestinationPath}`);
       await fs.copyFile(fullPath, fullDestinationPath);
     }
   }
 
-  async runContinuously() {
+  async watch() {
     // TODO
   }
 }

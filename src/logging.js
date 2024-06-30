@@ -1,4 +1,4 @@
-const OutputFormat = {
+export const OutputFormat = {
   RESET: "\x1b[0m",
   DEFAULT_COLOR: "\x1b[39m",
   BOLD: "\x1b[1m",
@@ -6,6 +6,7 @@ const OutputFormat = {
   RED: "\x1b[31m",
   GREEN: "\x1b[32m",
   YELLOW: "\x1b[33m",
+  GREY: "\x1b[90m",
 };
 
 /**
@@ -22,7 +23,7 @@ export const LogLevel = {
     level: 0,
     name: "Verbose",
     stream: process.stdout,
-    color: OutputFormat.DEFAULT_COLOR,
+    color: OutputFormat.GREY,
   },
   INFO: {
     level: 1,

@@ -2,10 +2,9 @@ import { BuildConfig } from "../build-config.js";
 import { Copy } from "../modules/copy.js";
 import { NpmInstall } from "../modules/npm-install.js";
 
-class WebPreset extends BuildConfig {
-  static pipeline = [
+const web = new BuildConfig({
+  pipeline: [
     new Copy({
-      label: "📄 Copying source files",
       from: "src",
       to: "build",
       files: [
@@ -14,7 +13,6 @@ class WebPreset extends BuildConfig {
       ],
     }),
     new Copy({
-      label: "📄 Copying package files",
       from: ".",
       to: "build",
       recursive: false,
@@ -24,10 +22,9 @@ class WebPreset extends BuildConfig {
       ],
     }),
     new NpmInstall({
-      label: "📦 Installing dependencies",
       directory: "build",
     }),
-  ];
-}
+  ],
+});
 
-export default WebPreset;
+export default web;
