@@ -8,6 +8,8 @@ import { pathToFileURL } from "url";
 export class BuildConfig {
   /** @type {boolean} */
   watch = false;
+  /** @type {string[]} */
+  ignored_folders = ["node_modules", ".git"];
   /** @type {BuildModule[]} */
   pipeline = [];
 
@@ -15,10 +17,12 @@ export class BuildConfig {
    *  @param {Object} options
    *  @param {BuildModule[]} options.pipeline The modules to run in the build pipeline.
    *  @param {boolean} [options.watch] Whether to watch for changes and rebuild.
+   *  @param {string[]} [options.ignored_folders] The folders to ignore when watching for changes.
    */
   constructor(options) {
     this.pipeline = options.pipeline ?? this.pipeline;
     this.watch = options.watch ?? this.watch;
+    this.ignored_folders = options.ignored_folders ?? this.ignored_folders;
   }
 }
 

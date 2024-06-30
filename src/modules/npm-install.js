@@ -3,6 +3,8 @@ import { exec } from "node:child_process";
 import { log, LogLevel } from "../logging.js";
 import { buildEvents } from "../events.js";
 import { join } from "node:path";
+import { debounce } from "../utils/debounce.js";
+import { readFile } from "node:fs/promises";
 
 /** @import { BuildEventListener } from "../events.js"; */
 
@@ -12,6 +14,9 @@ import { join } from "node:path";
 export class NpmInstall extends BuildModule {
   /** @type {string | undefined} */
   directory;
+
+  #packageJsonCache = null;
+  #packageLockJsonCache = null;
 
   /**
    * @param {Object} options
@@ -23,7 +28,19 @@ export class NpmInstall extends BuildModule {
   }
 
   async run() {
+
+    const packageJson = await readFile(join(this.directory, "package.json"), "utf-8");
+    const packageLockJson = await readFile(join(this.directory, "package-lock.json"), "utf-8");
+
+    if (this.#packageJsonCache === packageJson && this.#packageLockJsonCache === packageLockJson) {
+      log(LogLevel.VERBOSE, "Skipping npm install because package files haven't changed");
+      return;
+    }
+
     log(LogLevel.INFO, `📦 Installing npm dependencies in ${this.directory}`);
+
+    this.#packageJsonCache = packageJson;
+    this.#packageLockJsonCache = packageLockJson;
 
     const command = `npm install --omit=dev`;
     log(LogLevel.VERBOSE, `Executing "${command}" in ${this.directory}`);
@@ -52,22 +69,21 @@ export class NpmInstall extends BuildModule {
   }
 
   async watch() {
+    const debouncedRun = debounce(() => this.run(), 100);
+
     /** @type {BuildEventListener<string>} */
     const handler = async (event) => {
       const path = event.data;
 
       if (join(this.directory ?? "", "package.json") === path) {
-        log(LogLevel.VERBOSE, "Detected package.json change");
-        await this.run();
+        await debouncedRun();
       }
 
       if (join(this.directory ?? "", "package-lock.json") === path) {
-        log(LogLevel.VERBOSE, "Detected package-lock.json change");
-        await this.run();
+        await debouncedRun();
       }
     };
 
-    buildEvents.fileUpdated.subscribe(handler);
-    buildEvents.fileAdded.subscribe(handler);
+    buildEvents.fileChanged.subscribe(handler);
   }
 }

@@ -2,6 +2,7 @@ import { BuildModule } from "./build-module.js";
 import fs from "fs/promises";
 import { join } from "node:path";
 import { log, LogLevel } from "../logging.js";
+import { buildEvents } from "../events.js";
 
 /**
  * Copies files from one directory to another, preserving the directory structure.
@@ -48,24 +49,37 @@ export class Copy extends BuildModule {
       }
 
       const fullPath = join(file.parentPath, file.name);
-      const relativePath = fullPath.replace(this.from, "");
-      const matchesRegex = this.files?.some((regex) => regex.test(relativePath)) ?? true;
 
-      if (!matchesRegex) {
-        continue;
-      }
-
-      const fullDestinationPath = join(this.to, relativePath);
-      const destinationDirectory = fullDestinationPath.replace(/[\/\\][^\/\\]+$/, "");
-
-      await fs.mkdir(destinationDirectory, { recursive: true });
-
-      log(LogLevel.VERBOSE, `Copying ${fullPath} to ${fullDestinationPath}`);
-      await fs.copyFile(fullPath, fullDestinationPath);
+      await this.#copyIfMatch(fullPath);
     }
   }
 
   async watch() {
-    // TODO
+    buildEvents.fileChanged.subscribe(async (event) => {
+      const fullPath = event.data;
+
+      if (!fullPath.startsWith(this.from)) {
+        return;
+      }
+
+      await this.#copyIfMatch(fullPath);
+    });
+  }
+
+  async #copyIfMatch(fullPath) {
+    const relativePath = fullPath.replace(this.from, "");
+    const matchesRegex = this.files?.some((regex) => regex.test(relativePath)) ?? true;
+
+    if (!matchesRegex) {
+      return;
+    }
+
+    const fullDestinationPath = join(this.to, relativePath);
+    const destinationDirectory = fullDestinationPath.replace(/[\/\\][^\/\\]+$/, "");
+
+    await fs.mkdir(destinationDirectory, { recursive: true });
+
+    log(LogLevel.VERBOSE, `Copying ${fullPath} to ${fullDestinationPath}`);
+    await fs.copyFile(fullPath, fullDestinationPath);
   }
 }

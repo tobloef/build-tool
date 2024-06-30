@@ -23,9 +23,9 @@ export async function cli() {
   log(LogLevel.VERBOSE, `Using build config: ${inspect(buildConfig, { depth: null })}`);
 
   if (buildConfig.watch) {
-    await runPipelineContinuously(buildConfig.pipeline);
+    await runPipelineContinuously(buildConfig);
   } else {
-    await runPipelineOnce(buildConfig.pipeline);
+    await runPipelineOnce(buildConfig);
   }
 
 }

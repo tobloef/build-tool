@@ -1,13 +1,9 @@
 export const buildEvents = {
-	/** @type {BuildEventType<string>} */
-	fileAdded: createBuildEventType(),
-	/** @type {BuildEventType<string>} */
-	fileUpdated: createBuildEventType(),
-	/** @type {BuildEventType<string>} */
-	fileRemoved: createBuildEventType(),
-	/** @type {BuildEventType<void>} */
-	reloadRequested: createBuildEventType(),
-}
+  /** @type {BuildEventType<string>} */
+  fileChanged: createBuildEventType(),
+  /** @type {BuildEventType<void>} */
+  reloadRequested: createBuildEventType(),
+};
 
 
 /**
@@ -39,37 +35,37 @@ export const buildEvents = {
  * @returns {BuildEventType<T>}
  */
 function createBuildEventType() {
-	/** @type {Record<number, (event: BuildEvent<T>) => void>} */
-	const listeners = {};
+  /** @type {Record<number, (event: BuildEvent<T>) => void>} */
+  const listeners = {};
 
-	let nextId = 0;
+  let nextId = 0;
 
-	return {
-		subscribe: (listener) => {
-			const id = nextId++;
+  return {
+    subscribe: (listener) => {
+      const id = nextId++;
 
-			listeners[id] = listener;
+      listeners[id] = listener;
 
-			return () => {
-				delete listeners[id];
-			}
-		},
-		publish: (data) => {
-			const event = {
-				stopPropagation: () => {
-					event.isPropagationStopped = true;
-				},
-				data,
-				isPropagationStopped: false,
-			};
+      return () => {
+        delete listeners[id];
+      };
+    },
+    publish: (data) => {
+      const event = {
+        stopPropagation: () => {
+          event.isPropagationStopped = true;
+        },
+        data,
+        isPropagationStopped: false,
+      };
 
-			for (const listener of Object.values(listeners)) {
-				listener(event);
+      for (const listener of Object.values(listeners)) {
+        listener(event);
 
-				if (event.isPropagationStopped) {
-					break;
-				}
-			}
-		},
-	}
+        if (event.isPropagationStopped) {
+          break;
+        }
+      }
+    },
+  };
 }
