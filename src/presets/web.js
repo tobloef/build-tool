@@ -1,6 +1,5 @@
 import { BuildConfig } from "../build-config.js";
-import { Copy } from "../modules/copy.js";
-import { NpmInstall } from "../modules/npm-install.js";
+import { Copy, NpmInstall } from "../modules/index.js";
 
 const web = new BuildConfig({
   pipeline: [

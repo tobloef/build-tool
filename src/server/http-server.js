@@ -2,8 +2,6 @@ import { createServer } from "node:http";
 import { log, LogLevel } from "../utils/logging.js";
 import { fileExists } from "../utils/file-exists.js";
 import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
 import { getMimeType } from "../utils/get-mime-type.js";
 import { join } from "node:path";
 
@@ -40,26 +38,31 @@ function createRequestHandler(options) {
       path = "/index.html";
     }
 
-    const filePath = `${directory}${path}`;
+    if (path.startsWith("/@injected/")) {
+      const thisDirectory = join(import.meta.dirname, "injected");
+      path = path.replace("/@injected/", `${thisDirectory}/`);
+    } else {
+      path = `${directory}${path}`;
+    }
 
-    if (!await fileExists(filePath)) {
+    if (!await fileExists(path)) {
       res.statusCode = 404;
       res.setHeader("Content-Type", "text/plain");
       res.end("Not found");
-      log(LogLevel.ERROR, `File not found: ${filePath}`);
+      log(LogLevel.ERROR, `File not found: ${path}`);
       return;
     }
 
-    let file = await readFile(filePath);
+    let file = await readFile(path);
 
     if (live && path.endsWith(".html")) {
-      file = await injectScript(path, file, "./injected/live-reload.js");
+      file = await injectScript(path, file, "live-reload.js");
     }
 
-    log(LogLevel.VERBOSE, `Serving file: ${filePath}`);
+    log(LogLevel.VERBOSE, `Serving file: ${path}`);
 
     res.statusCode = 200;
-    res.setHeader("Content-Type", getMimeType(filePath));
+    res.setHeader("Content-Type", getMimeType(path));
     res.end(file);
   };
 }
@@ -67,18 +70,16 @@ function createRequestHandler(options) {
 /**
  * @param {string} htmlPath
  * @param {Buffer} file
- * @param {string} relativeScriptPath
+ * @param {string} relativeScriptPath Relative to "injected" directory
  * @return {Promise<Buffer>}
  */
 async function injectScript(htmlPath, file, relativeScriptPath) {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  const scriptPath = join(__dirname, relativeScriptPath);
-  const script = `<script type="module">${await readFile(scriptPath)}</script>`;
+  const scriptUrl = `/@injected/${relativeScriptPath}`;
+  const script = `<script type="module" src="${scriptUrl}" />`;
   const fileString = file.toString();
   const newFileString = fileString.replace(/(\n?\t*<\/body>)/, `${script}$1`);
 
-  log(LogLevel.VERBOSE, `Injected script "${scriptPath}" into "${htmlPath}"`);
+  log(LogLevel.VERBOSE, `Injected script "${relativeScriptPath}" into "${htmlPath}"`);
 
   return Buffer.from(newFileString);
 }
