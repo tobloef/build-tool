@@ -38,9 +38,9 @@ function createRequestHandler(options) {
       path = "/index.html";
     }
 
-    if (path.startsWith("/@injected/")) {
+    if (path.startsWith("@injected/")) {
       const thisDirectory = join(import.meta.dirname, "injected");
-      path = path.replace("/@injected/", `${thisDirectory}/`);
+      path = path.replace("@injected/", `${thisDirectory}/`);
     } else {
       path = `${directory}${path}`;
     }
@@ -74,7 +74,7 @@ function createRequestHandler(options) {
  * @return {Promise<Buffer>}
  */
 async function injectScript(htmlPath, file, relativeScriptPath) {
-  const scriptUrl = `/@injected/${relativeScriptPath}`;
+  const scriptUrl = `@injected/${relativeScriptPath}`;
   const script = `<script type="module" src="${scriptUrl}" />`;
   const fileString = file.toString();
   const newFileString = fileString.replace(/(\n?\t*<\/body>)/, `${script}$1`);
