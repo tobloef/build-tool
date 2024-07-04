@@ -1,18 +1,18 @@
-const reloadEmoji = String.fromCodePoint(0x1F504);
+// @ts-ignore
+import { socket } from "/@injected/socket.js";
 
-const socket = new WebSocket(`ws://${window.location.host}`);
-
-socket.addEventListener("open", () => {
-  console.debug(`${reloadEmoji} Live reloading enabled`);
-});
-
-socket.addEventListener("message", (event) => {
+/**
+ * @param {MessageEvent} event
+ */
+function handleMessage(event) {
   if (event.data === "live reload") {
     console.debug("Live reloading page");
     window.location.reload();
   }
-});
+}
 
-socket.addEventListener("close", () => {
-  console.debug("Lost connection to dev server, refresh the page to reconnect");
-});
+socket.addEventListener("message", handleMessage);
+
+const reloadEmoji = String.fromCodePoint(0x1F504);
+
+console.info(`${reloadEmoji} Live reloading enabled`);

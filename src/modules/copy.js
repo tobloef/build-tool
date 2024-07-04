@@ -7,6 +7,7 @@ import { DEFAULT_BUILD_DIR, DEFAULT_SOURCE_DIR } from "../constants.js";
 import { fileExists } from "../utils/file-exists.js";
 import { readdir } from "node:fs/promises";
 import { escapeRegExp } from "../utils/escape-regex.js";
+import { dirname, resolve } from "path";
 
 /**
  * Copies files from one directory to another, preserving the directory structure.
@@ -54,51 +55,50 @@ export class Copy extends BuildModule {
         continue;
       }
 
-      const fullPath = join(file.parentPath, file.name);
+      const relativePath = join(file.parentPath, file.name);
 
-      await this.#copyIfMatch(fullPath);
+      await this.#copyIfMatch(relativePath);
     }
   }
 
   async watch() {
     buildEvents.fileChanged.subscribe(async (event) => {
-      const fullPath = event.data;
-
-      if (!fullPath.startsWith(this.from)) {
+      if (!event.data.relative.startsWith(this.from)) {
         return;
       }
 
-      await this.#copyIfMatch(fullPath);
+      await this.#copyIfMatch(event.data.relative);
     });
   }
 
   /**
-   * @param {string} path
+   * @param {string} relativePath
    * @return {Promise<void>}
    */
-  async #copyIfMatch(path) {
-    const relativePath = path.replace(new RegExp(`^${escapeRegExp(this.from)}`), "");
-    const matchesRegex = this.files?.some((regex) => regex.test(relativePath)) ?? true;
+  async #copyIfMatch(relativePath) {
+    const absolutePath = resolve(relativePath);
+    const absoluteFrom = resolve(this.from);
+    const relativeToFrom = absolutePath.replace(absoluteFrom, "");
+    const matchesRegex = this.files?.some((regex) => regex.test(relativeToFrom)) ?? true;
 
     if (!matchesRegex) {
       return;
     }
 
-    const fullDestinationPath = join(this.to, relativePath);
-    const destinationDirectory = fullDestinationPath.replace(/[\/\\][^\/\\]+$/, "");
+    const relativeToDestination = join(this.to, relativeToFrom);
+    const destinationDirectory = dirname(relativeToDestination);
 
-    if (!await fileExists(path)) {
-      if (await fileExists(fullDestinationPath)) {
-        log(LogLevel.VERBOSE, `Deleting ${path} from ${fullDestinationPath}`);
-        await fs.rm(fullDestinationPath);
+    if (!await fileExists(relativePath)) {
+      if (await fileExists(relativeToDestination)) {
+        log(LogLevel.VERBOSE, `Deleting ${relativePath} from ${destinationDirectory}`);
+        await fs.rm(relativeToDestination);
       }
     } else {
       await fs.mkdir(destinationDirectory, { recursive: true });
 
-      log(LogLevel.VERBOSE, `Copying ${path} to ${fullDestinationPath}`);
-      await fs.copyFile(path, fullDestinationPath);
-    }
+      log(LogLevel.VERBOSE, `Copying ${relativePath} to ${relativeToDestination}`);
 
-    buildEvents.liveReload.publish();
+      await fs.copyFile(relativePath, relativeToDestination);
+    }
   }
 }

@@ -1,8 +1,10 @@
 export const buildEvents = {
-  /** @type {BuildEventType<string>} */
+  /** @type {BuildEventType<{ absolute: string, relative: string }>} */
   fileChanged: createBuildEventType(),
   /** @type {BuildEventType<void>} */
   liveReload: createBuildEventType(),
+  /** @type {BuildEventType<string>} */
+  hotReload: createBuildEventType(),
 };
 
 

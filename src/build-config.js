@@ -14,7 +14,7 @@ export class BuildConfig {
   /** @type {ServeOptions | null} */
   serve = null;
   /** @type {string[]} */
-  ignored_folders = ["node_modules", ".git"];
+  ignoredFolders = ["node_modules", ".git"];
   /** @type {BuildModule[]} */
   pipeline = [];
 
@@ -25,13 +25,13 @@ export class BuildConfig {
    *  @param {boolean} [options.watch]
    *  @param {ServeOptions} [options.serve]
    *
-   *  @param {string[]} [options.ignored_folders]
+   *  @param {string[]} [options.ignoredFolders]
    */
   constructor(options) {
     this.pipeline = options.pipeline ?? this.pipeline;
     this.watch = options.watch ?? this.watch;
     this.serve = options.serve ?? this.serve;
-    this.ignored_folders = options.ignored_folders ?? this.ignored_folders;
+    this.ignoredFolders = options.ignoredFolders ?? this.ignoredFolders;
   }
 }
 
@@ -89,6 +89,7 @@ async function getBuildConfigPath() {
  * @property {string} directory
  * @property {boolean} [live]
  * @property {boolean} [hot]
+ * @property {boolean} [open]
  */
 
 /** @type {ServeOptions} */

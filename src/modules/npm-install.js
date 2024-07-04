@@ -8,6 +8,7 @@ import { readFile } from "node:fs/promises";
 import { DEFAULT_BUILD_DIR } from "../constants.js";
 import { fileExists } from "../utils/file-exists.js";
 import BuildError from "../build-error.js";
+import { resolve } from "path";
 
 /** @import { BuildEventListener } from "../events.js"; */
 
@@ -83,7 +84,9 @@ export class NpmInstall extends BuildModule {
   async watch() {
     const debouncedRun = debounce(async () => this.run(), 100);
 
-    /** @type {BuildEventListener<string>} */
+    const absoluteDirectory = resolve(this.directory);
+
+    /** @type {BuildEventListener<{ absolute: string, relative: string }>} */
     const handler = async (event) => {
       /**
        * @param {string} filename
@@ -91,11 +94,11 @@ export class NpmInstall extends BuildModule {
        * @return {Promise<void>}
        */
       const checkAgainstFile = async (filename, cache) => {
-        const fullPath = join(this.directory, filename);
+        const absoluteFile = join(absoluteDirectory, filename);
 
-        if (fullPath === event.data) {
-          if (await fileExists(fullPath)) {
-            const fileData = await readFile(fullPath, "utf-8");
+        if (absoluteFile === event.data.absolute) {
+          if (await fileExists(absoluteFile)) {
+            const fileData = await readFile(absoluteFile, "utf-8");
             if (fileData === cache) return;
           }
 
