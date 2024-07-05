@@ -56,6 +56,7 @@ function createRequestHandler(options) {
       res.statusCode = 404;
       res.setHeader("Content-Type", "text/plain");
       res.end("Not found");
+      // TODO: File not found: build/Users/dkTobLof/Code/build-tool-test/build/value?t=1720131501415
       log(LogLevel.ERROR, `File not found: ${path}`);
       return;
     }

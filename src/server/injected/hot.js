@@ -19,7 +19,7 @@ export const modules = {
     }
 
     console.debug(`Loading module "${absolutePath}" by importing it`);
-    const module = await import((`${absolutePath}?t=${Date.now()}`));
+    const module = await import((`${absolutePath}?noCache=${Date.now()}`));
     module["*"] = module;
     moduleCache[absolutePath] = module;
     return module;
