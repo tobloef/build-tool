@@ -4,9 +4,8 @@ import { fileExists } from "../utils/file-exists.js";
 import { readFile } from "node:fs/promises";
 import { getMimeType } from "../utils/get-mime-type.js";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { proxyWithHotImports } from "../hot/proxy-with-hot-imports.js";
-import { resolve } from "path";
+import * as url from "node:url";
 
 /** @import { IncomingMessage, ServerResponse, Server } from "node:http"; */
 
@@ -33,11 +32,14 @@ function createRequestHandler(options) {
     live,
     hot,
     directory,
+    address,
+    port,
   } = options;
 
   return async (req, res) => {
+    const url = new URL(req.url, `http://${address}:${port}`);
 
-    let path = req.url;
+    let path = url.pathname;
 
     if (path === undefined || path === "/") {
       path = "/index.html";
@@ -45,8 +47,8 @@ function createRequestHandler(options) {
 
     let wasInjected = false;
     if (path.startsWith("/@injected/")) {
-      const thisDirectory = join(import.meta.dirname, "injected");
-      path = path.replace("/@injected/", `${thisDirectory}/`);
+      const injectedSourceDir = join(import.meta.dirname, "injected");
+      path = path.replace("/@injected/", `${injectedSourceDir}/`);
       wasInjected = true;
     } else {
       path = `${directory}${path}`;
@@ -56,7 +58,6 @@ function createRequestHandler(options) {
       res.statusCode = 404;
       res.setHeader("Content-Type", "text/plain");
       res.end("Not found");
-      // TODO: File not found: build/Users/dkTobLof/Code/build-tool-test/build/value?t=1720131501415
       log(LogLevel.ERROR, `File not found: ${path}`);
       return;
     }
@@ -74,9 +75,9 @@ function createRequestHandler(options) {
     }
 
     if (path.endsWith(".js")) {
-      if (hot && !path.includes("node_modules") && !wasInjected) {
+      if (hot && !path.match(/(^|\/)node_modules\//) && !wasInjected) {
         log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
-        file = await proxyWithHotImports(file.toString(), resolve(path));
+        file = await proxyWithHotImports(file.toString(), path, directory);
       }
     }
 

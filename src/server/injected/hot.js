@@ -10,42 +10,43 @@ let moduleCache = {};
 let nextId = 0;
 
 export const modules = {
-  // TODO: Using absolute path is not quite right, it should be relative to the current page
-  /** @param {string} absolutePath */
-  get: async (absolutePath) => {
-    if (moduleCache[absolutePath]) {
-      console.debug(`Loading module "${absolutePath}" from cache`);
-      return moduleCache[absolutePath];
+  /** @param {string} canonicalPath */
+  get: async (canonicalPath) => {
+    if (moduleCache[canonicalPath]) {
+      console.debug(`Loading module "${canonicalPath}" from cache`);
+      return await moduleCache[canonicalPath];
     }
 
-    console.debug(`Loading module "${absolutePath}" by importing it`);
-    const module = await import((`${absolutePath}?noCache=${Date.now()}`));
-    module["*"] = module;
-    moduleCache[absolutePath] = module;
-    return module;
+    console.debug(`Importing module "${canonicalPath}"`);
+    moduleCache[canonicalPath] = new Promise(async (resolve) => {
+      const module = await import((`${canonicalPath}?noCache=${Date.now()}`));
+      resolve(module);
+    });
+
+    return await moduleCache[canonicalPath];
   },
   /**
-   * @param {string} absolutePath
+   * @param {string} canonicalPath
    * @param {() => void} callback
    * */
-  onReload: (absolutePath, callback) => {
+  onReload: (canonicalPath, callback) => {
     const id = nextId++;
 
-    if (!reloadCallbacks[absolutePath]) {
-      reloadCallbacks[absolutePath] = {};
+    if (!reloadCallbacks[canonicalPath]) {
+      reloadCallbacks[canonicalPath] = {};
     }
 
-    reloadCallbacks[absolutePath][id] = callback;
+    reloadCallbacks[canonicalPath][id] = callback;
 
     return () => {
-      delete reloadCallbacks[absolutePath][id];
+      delete reloadCallbacks[canonicalPath][id];
     };
   },
-  /** @param {string} absolutePath */
-  reload: (absolutePath) => {
-    const callbacksForPath = Object.values(reloadCallbacks[absolutePath] ?? {});
-    console.debug(`Calling ${callbacksForPath.length} callbacks for ${absolutePath} and removing it from cache`);
-    delete moduleCache[absolutePath];
+  /** @param {string} canonicalPath */
+  reload: (canonicalPath) => {
+    const callbacksForPath = Object.values(reloadCallbacks[canonicalPath] ?? {});
+    console.debug(`Calling ${callbacksForPath.length} callbacks for ${canonicalPath} and removing it from cache`);
+    delete moduleCache[canonicalPath];
     callbacksForPath.forEach((callback) => callback());
   },
 };

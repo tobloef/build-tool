@@ -1,12 +1,14 @@
 import { dirname, resolve } from "path";
 import { parseImports } from "./parse-imports.js";
+import { join } from "node:path";
 
 /**
  * @param {string} code
- * @param {string} absolutePath
+ * @param {string} modulePath
+ * @param {string} rootPath
  * @return {Promise<string>}
  */
-export async function proxyWithHotImports(code, absolutePath) {
+export async function proxyWithHotImports(code, modulePath, rootPath) {
   const { imports, remainingCode } = parseImports(code);
 
   if (imports.length === 0) {
@@ -29,23 +31,29 @@ export async function proxyWithHotImports(code, absolutePath) {
     } = importInfo;
 
     const {
-      absolutePath: absoluteImportPath,
       isBare,
-    } = parseImportPath(importPath, absolutePath);
+      canonicalPath,
+    } = parseImportPath(importPath, modulePath, rootPath);
 
     if (isBare) {
       continue;
     }
 
+    let assign = `${importName} = {...await modules.get("${canonicalPath}")}`;
+    if (exportName !== "*") {
+      assign += `["${exportName}"]`;
+    }
+    assign += ";";
+    assigns.push(assign);
+
     lets.push(`let ${importName};`);
-    assigns.push(`${importName} = await modules.get("${absoluteImportPath}")["${exportName}"];`);
-    listeners.add(`modules.onReload("${absoluteImportPath}", ${reimportFunction});`);
+    listeners.add(`modules.onReload("${canonicalPath}", ${reimportFunction});`);
   }
 
   return (
     `${lets.join("\n")}` +
     (lets.length > 0 ? "\n\n" : "") +
-    "(async () => {\n\t" +
+    "await (async () => {\n\t" +
     `const { modules } = await import("${HOT_PACKAGE}");\n\n\t` +
     `const ${reimportFunction} = async () => {` +
     (assigns.length > 0 ? "\n\t\t" : "") +
@@ -64,10 +72,11 @@ export async function proxyWithHotImports(code, absolutePath) {
 
 /**
  * @param {string} importPath
- * @param {string} absoluteParentPath
- * @return {{ isBare: boolean, absolutePath: string }}
+ * @param {string} parentPath
+ * @param {string} rootPath
+ * @return {{ isBare: boolean, canonicalPath: string }}
  */
-function parseImportPath(importPath, absoluteParentPath) {
+function parseImportPath(importPath, parentPath, rootPath) {
   const isAbsolute = importPath.startsWith("/");
 
   const isRelative = (
@@ -77,12 +86,18 @@ function parseImportPath(importPath, absoluteParentPath) {
 
   const isBare = !isAbsolute && !isRelative;
 
-  const absolutePath = isRelative
-    ? resolve(dirname(absoluteParentPath), importPath)
-    : importPath;
+  if (!isRelative) {
+    return {
+      isBare,
+      canonicalPath: importPath,
+    };
+  }
+
+  const canonicalPath = resolve(dirname(parentPath), importPath)
+    .replace(resolve(rootPath), "");
 
   return {
     isBare,
-    absolutePath,
+    canonicalPath,
   };
 }

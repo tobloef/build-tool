@@ -102,6 +102,7 @@ function setupReloadEvents(buildConfig) {
     // TODO: Figure out how to register that a file type should be handled hotly
     // TODO: Build up a dependency graph to hot reload in the correct order
     // TODO: Don't hot reload if file has a "// @no-hot" comment
+    // TODO: Or inverse of this based on a setting
     // TODO: Don't hot reload if the file is not in the dependency graph (i.e. not imported)
 
     const isJsFile = event.data.relative.endsWith(".js");
@@ -110,7 +111,8 @@ function setupReloadEvents(buildConfig) {
     const shouldLiveReload = !shouldHotReload;
 
     if (shouldHotReload) {
-      buildEvents.hotReload.publish(event.data.absolute);
+      const canonicalPath = event.data.absolute.replace(absoluteBuildPath, "");
+      buildEvents.hotReload.publish(canonicalPath);
     }
 
     if (shouldLiveReload) {
