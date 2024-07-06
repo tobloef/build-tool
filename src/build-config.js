@@ -72,7 +72,7 @@ async function getBuildConfigPath() {
     "No build config found. You must either:" +
     "\n  * Have a build-config.js (or .mjs) file in the working directory" +
     "\n  * Specify a path to a build config as the first argument" +
-    `\n  * Specify a preset as the first argument (available presets: ${Object.keys(presets).join(",")})`,
+    `\n  * Specify a preset as the first argument (available presets: ${Object.keys(presets).join(", ")})`,
   );
   process.exit(1);
 }
