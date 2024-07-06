@@ -62,15 +62,21 @@ async function watchFiles(buildConfig) {
 
     const absolutePath = resolve(filename);
 
-    const isFolder = (await lstat(absolutePath)).isDirectory();
-
-    if (isFolder) {
-      continue;
-    }
-
     const absoluteIgnoredFolders = buildConfig.ignoredFolders.map((folder) => resolve(folder));
 
     if (absoluteIgnoredFolders.some((folder) => absolutePath.startsWith(folder))) {
+      continue;
+    }
+
+    let isFolder = false;
+    try {
+      isFolder = (await lstat(absolutePath)).isDirectory();
+    } catch (error) {
+      // This check wasn't that important, let's just move on
+      log(LogLevel.WARNING, `Failed to check if "${absolutePath}" was a folder: ${error.message}`);
+    }
+
+    if (isFolder) {
       continue;
     }
 
