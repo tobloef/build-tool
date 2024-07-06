@@ -17,7 +17,7 @@ const path = `(?<path>["'][^"']*?["'])`;
 
 const attributes = `(?:with\\s+(?<attributes>\\{(\\s|.)*?\\}))`;
 
-const importStatement = `import\\s+${oneOrMoreImports}\\s+from\\s+${path}(?:\\s+${attributes})?;?`;
+const importStatement = `(^|\\n)\\s*import\\s+${oneOrMoreImports}\\s+from\\s+${path}(?:\\s+${attributes})?;?`;
 
 const pairRegex = new RegExp(pair, "g");
 const namedImportsRegex = new RegExp(namedImports, "g");

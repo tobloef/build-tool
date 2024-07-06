@@ -5,6 +5,7 @@ const githubPages = new BuildConfig({
   serve: new ServeOptions({
     directory: "src",
     hot: true,
+    live: true,
   }),
 });
 

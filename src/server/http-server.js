@@ -71,7 +71,7 @@ function createRequestHandler(options) {
 
     if (path.endsWith(".html")) {
       if (live) {
-        file = await injectScript(path, file, "live-reload.js");
+        file = await injectScript(path, file, "live.js");
       }
 
       if (hot) {

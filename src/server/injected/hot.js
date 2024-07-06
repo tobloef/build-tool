@@ -16,7 +16,6 @@ export const modules = {
    */
   get: async (canonicalPath, attributes) => {
     if (moduleCache[canonicalPath]) {
-      console.debug(`Loading module "${canonicalPath}" from cache`);
       return await moduleCache[canonicalPath];
     }
 
@@ -73,6 +72,7 @@ function handleMessage(event) {
 
 socket.addEventListener("message", handleMessage);
 
-const hotEmoji = String.fromCodePoint(0x1F525);
-
-console.info(`${hotEmoji} Hot reloading enabled`);
+socket.addEventListener("open", () => {
+  const hotEmoji = String.fromCodePoint(0x1F525);
+  console.info(`${hotEmoji} Hot reloading enabled`);
+});

@@ -13,6 +13,7 @@ function handleMessage(event) {
 
 socket.addEventListener("message", handleMessage);
 
-const reloadEmoji = String.fromCodePoint(0x1F504);
-
-console.info(`${reloadEmoji} Live reloading enabled`);
+socket.addEventListener("open", () => {
+  const reloadEmoji = String.fromCodePoint(0x1F504);
+  console.info(`${reloadEmoji} Live reloading enabled`);
+});

@@ -107,11 +107,6 @@ function setupReloadEvents(buildConfig) {
     }
 
 
-    // TODO: Figure out why some modules are being imported multiple times
-
-    // TODO: Figure out how to register that a file type should be handled hotly
-    // TODO: Figure out how to live-reload in cases where hot-reloading is not possible
-
     const shouldHotReload = true;
     const shouldLiveReload = !shouldHotReload;
 
