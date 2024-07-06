@@ -90,7 +90,6 @@ function createRequestHandler(options) {
         if (shouldHot) {
           log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
           file = await injectHotImports(fileStr, path, directory);
-          file = "console.log(\"import.meta\", import.meta);\n\n" + file;
         }
       }
     }
