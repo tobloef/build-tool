@@ -6,8 +6,11 @@ import { constants } from "node:fs";
  * @param file {string}
  * @return {Promise<boolean>}
  */
-export function fileExists(file) {
-  return access(file, constants.F_OK)
-    .then(() => true)
-    .catch(() => false);
+export async function fileExists(file) {
+  try {
+    await access(file, constants.F_OK);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }

@@ -51,7 +51,7 @@ function createRequestHandler(options) {
 
     let wasInjected = false;
     if (path.startsWith("/@injected/")) {
-      const injectedSourceDir = join(import.meta.dirname, "injected");
+      const injectedSourceDir = join(import.meta.dirname, "injected").replace(/\\/g, "/");
       path = path.replace("/@injected/", `${injectedSourceDir}/`);
       wasInjected = true;
     } else {
@@ -81,7 +81,7 @@ function createRequestHandler(options) {
 
     if (path.endsWith(".js")) {
       const isRelative = path.startsWith(directory);
-      const isNodeModule = path.match(/(^|\/)node_modules\//);
+      const isNodeModule = path.match(/(^|\/|\\)node_modules(\/|\\)/);
       if (hot && !isNodeModule && !wasInjected && isRelative) {
         const fileStr = file.toString();
         log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);

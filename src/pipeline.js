@@ -4,6 +4,7 @@ import { watch } from "fs/promises";
 import { buildEvents } from "./events.js";
 import { debounce } from "./utils/debounce.js";
 import { resolve } from "path";
+import { lstat } from "node:fs/promises";
 
 /** @import { BuildConfig } from "./build-config.js"; */
 
@@ -61,6 +62,12 @@ async function watchFiles(buildConfig) {
 
     const absolutePath = resolve(filename);
 
+    const isFolder = (await lstat(absolutePath)).isDirectory();
+
+    if (isFolder) {
+      continue;
+    }
+
     const absoluteIgnoredFolders = buildConfig.ignoredFolders.map((folder) => resolve(folder));
 
     if (absoluteIgnoredFolders.some((folder) => absolutePath.startsWith(folder))) {
@@ -93,23 +100,30 @@ function setupReloadEvents(buildConfig) {
   const absoluteBuildPath = resolve(buildConfig.serve.directory);
 
   buildEvents.fileChanged.subscribe(async (event) => {
-    log(LogLevel.VERBOSE, `File changed: ${event.data.relative}`);
+    log(LogLevel.VERBOSE, `File changed: ${event.data.relative} (${event.data.absolute})`);
 
     if (!event.data.absolute.startsWith(absoluteBuildPath)) {
       return;
     }
 
-    // TODO: Figure out how to register that a file type should be handled hotly
+
     // TODO: Figure out why some modules are being imported multiple times
+
+    // TODO: Figure out how to register that a file type should be handled hotly
     // TODO: Figure out how to live-reload in cases where hot-reloading is not possible
 
-    const isJsFile = event.data.relative.endsWith(".js");
-
-    const shouldHotReload = isJsFile;
+    const shouldHotReload = true;
     const shouldLiveReload = !shouldHotReload;
 
+    const canonicalPath = event.data.absolute
+      .replace(absoluteBuildPath, "")
+      .replace(/\\/g, "/");
+
+    if (canonicalPath === "") {
+      return;
+    }
+
     if (shouldHotReload) {
-      const canonicalPath = event.data.absolute.replace(absoluteBuildPath, "");
       buildEvents.hotReload.publish(canonicalPath);
     }
 

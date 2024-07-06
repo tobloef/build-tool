@@ -51,10 +51,12 @@ export const modules = {
   /** @param {string} canonicalPath */
   reload: (canonicalPath) => {
     const callbacksForPath = Object.values(reloadCallbacks[canonicalPath] ?? {});
-    console.debug(`Calling ${callbacksForPath.length} callbacks for ${canonicalPath} and removing it from cache`);
+
+    console.debug(`Reloading module "${canonicalPath}" (${callbacksForPath.length} callbacks)`);
+
     delete moduleCache[canonicalPath];
     callbacksForPath.forEach((callback) => callback());
-  },
+    },
 };
 
 /**
