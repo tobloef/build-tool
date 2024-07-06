@@ -1,5 +1,5 @@
 import { dirname, resolve } from "path";
-import { parseImports } from "./parse-imports.js";
+import { commentOutImports, parseImports } from "./imports.js";
 
 /**
  * @param {string} code
@@ -8,11 +8,13 @@ import { parseImports } from "./parse-imports.js";
  * @return {Promise<string>}
  */
 export async function injectHotImports(code, modulePath, rootPath) {
-  const { imports, remainingCode } = parseImports(code);
+  const imports = parseImports(code);
 
   if (imports.length === 0) {
     return code;
   }
+
+  code = commentOutImports(code);
 
   const UNIQUE_STRING = "UFVWldpE"; // Prevent collisions
   const reimportFunction = `reimport_${UNIQUE_STRING}`;
@@ -64,8 +66,9 @@ export async function injectHotImports(code, modulePath, rootPath) {
     `${Array.from(listeners).join("\n\t")}` +
     (listeners.size > 0 ? "\n" : "") +
     "})()" +
-    (remainingCode.length > 0 ? "\n\n" : "") +
-    remainingCode
+    (code.length > 0 ? "\n\n" : "") +
+    code + "\n\n" +
+    `//# sourceMappingURL=${modulePath}.map`
   );
 }
 

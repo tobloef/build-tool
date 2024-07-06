@@ -15,7 +15,7 @@ const oneOrMoreImports = `(?<imports>${someImport}(?:,\\s+${someImport})*)`;
 
 const path = `(?<path>["'][^"']*?["'])`;
 
-const importStatement = `import\\s+${oneOrMoreImports}\\s+from\\s+${path};?\n?`;
+const importStatement = `import\\s+${oneOrMoreImports}\\s+from\\s+${path};?`;
 
 const namedImportsRegex = new RegExp(namedImports, "g");
 const namespaceImportRegex = new RegExp(namespaceImport, "g");
@@ -32,12 +32,12 @@ const pairRegex = new RegExp(pair, "g");
 
 /**
  * @param {string} code
- * @return {{ imports: ImportInfo[], remainingCode: string }}
+ * @return ImportInfo[]
  */
 export function parseImports(code) {
   let imports = [];
 
-  const { matches, remaining: remainingCode } = consumeMatches(code, importRegex);
+  const { matches } = consumeMatches(code, importRegex);
 
   for (const match of matches) {
     const {
@@ -109,10 +109,7 @@ export function parseImports(code) {
     }
   }
 
-  return {
-    imports,
-    remainingCode,
-  };
+  return imports;
 }
 
 /**
@@ -161,4 +158,12 @@ function consumeMatches(string, regex) {
   }
 
   return { remaining, matches };
+}
+
+/**
+ * @param {string} code
+ * @return string
+ */
+export function commentOutImports(code) {
+  return code.replace(importRegex, (match) => `/*${match}*/`);
 }
