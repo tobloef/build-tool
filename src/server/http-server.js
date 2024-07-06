@@ -4,12 +4,11 @@ import { fileExists } from "../utils/file-exists.js";
 import { readFile } from "node:fs/promises";
 import { getMimeType } from "../utils/get-mime-type.js";
 import { join } from "node:path";
-import { proxyWithHotImports } from "../hot/proxy-with-hot-imports.js";
-import * as url from "node:url";
+import { injectHotImports } from "../hot/inject-hot-imports.js";
 
 /** @import { IncomingMessage, ServerResponse, Server } from "node:http"; */
 
-/** @import { ServeOptions } from "../build-config.js"; */
+/** @import { ServeOptions, HotMode } from "../build-config.js"; */
 
 /**
  * @param {ServeOptions} options
@@ -80,9 +79,20 @@ function createRequestHandler(options) {
     }
 
     if (path.endsWith(".js")) {
-      if (hot && !path.match(/(^|\/)node_modules\//) && !wasInjected) {
-        log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
-        file = await proxyWithHotImports(file.toString(), path, directory);
+      const isRelative = path.startsWith(directory);
+      const isNodeModule = path.match(/(^|\/)node_modules\//);
+      if (hot && !isNodeModule && !wasInjected && isRelative) {
+        /** @type {HotMode} */
+        const hotMode = hot.mode ?? "opt-out";
+        const fileStr = file.toString();
+        const hasOptIn = /(^|\n)\s*\/\/\s*@hot\s*($|\n)/.test(fileStr);
+        const hasOptOut = /(^|\n)\s*\/\/\s*@no-hot\s*($|\n)/.test(fileStr);
+        const shouldHot = hotMode === "opt-in" ? hasOptIn : !hasOptOut;
+        if (shouldHot) {
+          log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
+          file = await injectHotImports(fileStr, path, directory);
+          file = "console.log(\"import.meta\", import.meta);\n\n" + file;
+        }
       }
     }
 

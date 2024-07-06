@@ -88,8 +88,17 @@ async function getBuildConfigPath() {
  * @property {string} address
  * @property {string} directory
  * @property {boolean} [live]
- * @property {boolean} [hot]
+ * @property {boolean | HotOptions} [hot]
  * @property {boolean} [open]
+ */
+
+/**
+ * @typedef {Object} HotOptions
+ * @property {HotMode} [mode]
+ */
+
+/**
+ * @typedef {"opt-in" | "opt-out"} HotMode
  */
 
 /** @type {ServeOptions} */

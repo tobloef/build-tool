@@ -8,7 +8,7 @@ import { join } from "node:path";
  * @param {string} rootPath
  * @return {Promise<string>}
  */
-export async function proxyWithHotImports(code, modulePath, rootPath) {
+export async function injectHotImports(code, modulePath, rootPath) {
   const { imports, remainingCode } = parseImports(code);
 
   if (imports.length === 0) {

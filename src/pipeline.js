@@ -99,11 +99,8 @@ function setupReloadEvents(buildConfig) {
       return;
     }
 
+    // TODO: Move opt-in and opt-out comments into the child
     // TODO: Figure out how to register that a file type should be handled hotly
-    // TODO: Build up a dependency graph to hot reload in the correct order
-    // TODO: Don't hot reload if file has a "// @no-hot" comment
-    // TODO: Or inverse of this based on a setting
-    // TODO: Don't hot reload if the file is not in the dependency graph (i.e. not imported)
 
     const isJsFile = event.data.relative.endsWith(".js");
 
