@@ -101,6 +101,7 @@ function setupReloadEvents(buildConfig) {
 
     // TODO: Move opt-in and opt-out comments into the child
     // TODO: Figure out how to register that a file type should be handled hotly
+    // TODO: Figure out why some modules are being imported multiple times
 
     const isJsFile = event.data.relative.endsWith(".js");
 
