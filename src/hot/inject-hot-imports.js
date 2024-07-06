@@ -1,6 +1,5 @@
 import { dirname, resolve } from "path";
 import { parseImports } from "./parse-imports.js";
-import { join } from "node:path";
 
 /**
  * @param {string} code

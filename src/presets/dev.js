@@ -1,5 +1,4 @@
 import { BuildConfig, ServeOptions } from "../build-config.js";
-import { Copy, NpmInstall } from "../modules/index.js";
 
 const githubPages = new BuildConfig({
   watch: true,

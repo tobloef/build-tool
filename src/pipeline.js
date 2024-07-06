@@ -3,7 +3,6 @@ import { watch } from "fs/promises";
 import { buildEvents } from "./events.js";
 import { debounce } from "./utils/debounce.js";
 import { resolve } from "path";
-import { Copy } from "./modules/index.js";
 
 /** @import { BuildConfig } from "./build-config.js"; */
 
