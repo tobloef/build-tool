@@ -6,9 +6,8 @@ import { inspect, parseArgs } from "node:util";
 import { runPipelineContinuously, runPipelineOnce } from "./pipeline.js";
 import { createHttpServer } from "./server/http-server.js";
 import { attachWebSocketServer } from "./server/websocket-server.js";
-import { spawn } from "node:child_process";
+import { open } from "./utils/open.js";
 
-/** @import { BuildConfig } from "./build-config.js"; */
 /** @import { Server } from "node:http"; */
 
 async function cli() {
@@ -88,7 +87,7 @@ async function startServer(server, serveOptions) {
 
       if (serveOptions.open) {
         log(LogLevel.INFO, "🚀 Opening in browser");
-        spawn("open", [url]);
+        open(url);
       }
 
       resolve(undefined);

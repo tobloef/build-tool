@@ -96,7 +96,8 @@ function parseImportPath(importPath, parentPath, rootPath) {
   }
 
   const canonicalPath = resolve(dirname(parentPath), importPath)
-    .replace(resolve(rootPath), "");
+    .replace(resolve(rootPath), "")
+    .replace(/\\/g, "/");
 
   return {
     isBare,
