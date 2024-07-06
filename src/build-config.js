@@ -17,7 +17,7 @@ export class BuildConfig {
 
   /**
    *  @param {Object} options
-   *  @param {BuildModule[]} options.pipeline
+   *  @param {BuildModule[]} [options.pipeline]
    *  @param {boolean} [options.watch]
    *  @param {ServeOptions} [options.serve]
    *  @param {string[]} [options.ignoredFolders]
@@ -77,19 +77,36 @@ async function getBuildConfigPath() {
   process.exit(1);
 }
 
-/**
- * @typedef {Object} ServeOptions
- * @property {number} port
- * @property {string} address
- * @property {string} directory
- * @property {boolean} [live]
- * @property {false | "opt-in" | "opt-out"} [hot]
- * @property {boolean} [open]
- */
+export class ServeOptions {
+  /** @type {number} */
+  port;
+  /** @type {string} */
+  address;
+  /** @type {string} */
+  directory;
+  /** @type {boolean} */
+  live;
+  /** @type {boolean | "opt-in" | "opt-out"} */
+  hot;
+  /** @type {boolean} */
+  open;
 
-/** @type {ServeOptions} */
-export const DEFAULT_SERVE_OPTIONS = {
-  port: 3007,
-  address: "localhost",
-  directory: ".",
-};
+  /**
+   * @param {Object} [options]
+   * @param {number} [options.port]
+   * @param {string} [options.address]
+   * @param {string} [options.directory]
+   * @param {boolean} [options.live]
+   * @param {boolean | "opt-in" | "opt-out"} [options.hot]
+   * @param {boolean} [options.open]
+   */
+  constructor(options) {
+    this.port = options?.port ?? 3007;
+    this.address = options?.address ?? "localhost";
+    this.directory = options?.directory ?? ".";
+    this.live = options?.live ?? false;
+    this.hot = options?.hot ?? false;
+    this.open = options?.open ?? false;
+  }
+}
+

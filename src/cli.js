@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 import { log, LogLevel, setLogLevel } from "./utils/logging.js";
-import { DEFAULT_SERVE_OPTIONS, getBuildConfig } from "./build-config.js";
+import { getBuildConfig, ServeOptions } from "./build-config.js";
 import { inspect, parseArgs } from "node:util";
 import { runPipelineContinuously, runPipelineOnce } from "./pipeline.js";
 import { createHttpServer } from "./server/http-server.js";
 import { attachWebSocketServer } from "./server/websocket-server.js";
 import { spawn } from "node:child_process";
 
-/** @import { BuildConfig, ServeOptions } from "./build-config.js"; */
+/** @import { BuildConfig } from "./build-config.js"; */
 /** @import { Server } from "node:http"; */
 
 async function cli() {
@@ -26,7 +26,7 @@ async function cli() {
 
   // Overwrite build config with CLI args
   buildConfig.watch = args.watch ?? buildConfig.watch;
-  buildConfig.serve = args.serve ? { ...DEFAULT_SERVE_OPTIONS, ...buildConfig.serve } : buildConfig.serve;
+  buildConfig.serve = args.serve && !buildConfig.serve ? new ServeOptions() : buildConfig.serve;
   if (buildConfig.serve) {
     buildConfig.serve.live = args.live ?? buildConfig.serve.live;
     buildConfig.serve.hot = args.hot ? "opt-out" : buildConfig.serve.hot;
@@ -38,11 +38,9 @@ async function cli() {
   await runPipelineOnce(buildConfig);
 
   if (buildConfig.serve) {
-    const serveOptions = { ...DEFAULT_SERVE_OPTIONS, ...buildConfig.serve };
-
-    const server = createHttpServer(serveOptions);
-    attachWebSocketServer(server, serveOptions);
-    await startServer(server, serveOptions);
+    const server = createHttpServer(buildConfig.serve);
+    attachWebSocketServer(server, buildConfig.serve);
+    await startServer(server, buildConfig.serve);
   }
 
   if (buildConfig.watch) {
