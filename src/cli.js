@@ -26,10 +26,10 @@ async function cli() {
 
   // Overwrite build config with CLI args
   buildConfig.watch = args.watch ?? buildConfig.watch;
-  buildConfig.serve = args.serve ? DEFAULT_SERVE_OPTIONS : buildConfig.serve;
+  buildConfig.serve = args.serve ? { ...DEFAULT_SERVE_OPTIONS, ...buildConfig.serve } : buildConfig.serve;
   if (buildConfig.serve) {
     buildConfig.serve.live = args.live ?? buildConfig.serve.live;
-    buildConfig.serve.hot = args.hot ?? buildConfig.serve.hot;
+    buildConfig.serve.hot = args.hot ? "opt-out" : buildConfig.serve.hot;
     buildConfig.serve.open = args.open ?? buildConfig.serve.open;
   }
 
@@ -38,9 +38,11 @@ async function cli() {
   await runPipelineOnce(buildConfig);
 
   if (buildConfig.serve) {
-    const server = createHttpServer(buildConfig.serve);
-    attachWebSocketServer(buildConfig.serve, server);
-    await startServer(buildConfig.serve, server);
+    const serveOptions = { ...DEFAULT_SERVE_OPTIONS, ...buildConfig.serve };
+
+    const server = createHttpServer(serveOptions);
+    attachWebSocketServer(server, serveOptions);
+    await startServer(server, serveOptions);
   }
 
   if (buildConfig.watch) {
@@ -66,10 +68,10 @@ function getArgs() {
 }
 
 /**
- * @param {ServeOptions} serveOptions
  * @param {Server} server
+ * @param {ServeOptions} serveOptions
  */
-async function startServer(serveOptions, server) {
+async function startServer(server, serveOptions) {
   return new Promise((resolve) => {
     const { port, address, live } = serveOptions;
 

@@ -7,16 +7,12 @@ import { log, LogLevel } from "../utils/logging.js";
 import { buildEvents } from "../events.js";
 
 /**
+ * @param {Server} httpServer
  * @param {ServeOptions} options
- * @param {Server} [httpServer]
  * @return {WebSocketServer}
  */
-export function attachWebSocketServer(options, httpServer) {
-  const { port, address } = options;
-
-  const wsOptions = httpServer ? { server: httpServer } : { port, host: address };
-
-  const wsServer = new WebSocketServer(wsOptions);
+export function attachWebSocketServer(httpServer, options) {
+  const wsServer = new WebSocketServer({ server: httpServer });
 
   wsServer.on("connection", createConnectionHandler(options));
 

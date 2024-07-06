@@ -5,7 +5,6 @@ import { buildEvents } from "../events.js";
 import { join } from "node:path";
 import { debounce } from "../utils/debounce.js";
 import { readFile } from "node:fs/promises";
-import { DEFAULT_BUILD_DIR } from "../constants.js";
 import { fileExists } from "../utils/file-exists.js";
 import BuildError from "../build-error.js";
 import { resolve } from "path";
@@ -17,7 +16,7 @@ import { resolve } from "path";
  */
 export class NpmInstall extends BuildModule {
   /** @type {string} */
-  directory = DEFAULT_BUILD_DIR;
+  directory;
 
   /** @type {string | null} */
   #packageJsonCache = null;
@@ -25,12 +24,12 @@ export class NpmInstall extends BuildModule {
   #packageLockJsonCache = null;
 
   /**
-   * @param {Object} [options]
-   * @param {string} [options.directory]
+   * @param {Object} options
+   * @param {string} options.directory
    */
   constructor(options) {
     super();
-    this.directory = options?.directory ?? this.directory;
+    this.directory = options.directory;
   }
 
   async run() {

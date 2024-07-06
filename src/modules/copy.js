@@ -3,10 +3,8 @@ import fs from "fs/promises";
 import { join } from "node:path";
 import { log, LogLevel } from "../utils/logging.js";
 import { buildEvents } from "../events.js";
-import { DEFAULT_BUILD_DIR, DEFAULT_SOURCE_DIR } from "../constants.js";
 import { fileExists } from "../utils/file-exists.js";
 import { readdir } from "node:fs/promises";
-import { escapeRegExp } from "../utils/escape-regex.js";
 import { dirname, resolve } from "path";
 
 /**
@@ -14,28 +12,28 @@ import { dirname, resolve } from "path";
  */
 export class Copy extends BuildModule {
   /** @type {string} */
-  from = DEFAULT_SOURCE_DIR;
+  from;
   /** @type {string} */
-  to = DEFAULT_BUILD_DIR;
+  to;
   /** @type {RegExp[] | null} */
-  files = null;
+  files;
   /** @type {boolean} */
-  recursive = true;
+  recursive;
 
   /**
    *
    * @param {Object} options
-   * @param {string} [options.from]
-   * @param {string} [options.to]
+   * @param {string} options.from
+   * @param {string} options.to
    * @param {RegExp[]} [options.files]
    * @param {boolean} [options.recursive]
    */
   constructor(options) {
     super();
-    this.from = options.from ?? this.from;
-    this.to = options.to ?? this.to;
-    this.files = options.files ?? this.files;
-    this.recursive = options.recursive ?? this.recursive;
+    this.from = options.from;
+    this.to = options.to;
+    this.files = options.files ?? null;
+    this.recursive = options.recursive ?? true;
   }
 
   async run() {

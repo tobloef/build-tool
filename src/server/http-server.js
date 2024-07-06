@@ -8,7 +8,7 @@ import { injectHotImports } from "../hot/inject-hot-imports.js";
 
 /** @import { IncomingMessage, ServerResponse, Server } from "node:http"; */
 
-/** @import { ServeOptions, HotMode } from "../build-config.js"; */
+/** @import { ServeOptions } from "../build-config.js"; */
 
 /**
  * @param {ServeOptions} options
@@ -36,7 +36,7 @@ function createRequestHandler(options) {
   } = options;
 
   return async (req, res) => {
-    const url = new URL(req.url, `http://${address}:${port}`);
+    const url = new URL(req.url ?? "", `http://${address}:${port}`);
 
     let path = url.pathname;
 
@@ -66,6 +66,7 @@ function createRequestHandler(options) {
       return;
     }
 
+    /** @type {Buffer | string} */
     let file = await readFile(path);
 
     if (path.endsWith(".html")) {
@@ -82,12 +83,10 @@ function createRequestHandler(options) {
       const isRelative = path.startsWith(directory);
       const isNodeModule = path.match(/(^|\/)node_modules\//);
       if (hot && !isNodeModule && !wasInjected && isRelative) {
-        /** @type {HotMode} */
-        const hotMode = hot.mode ?? "opt-out";
         const fileStr = file.toString();
         const hasOptIn = /(^|\n)\s*\/\/\s*@hot\s*($|\n)/.test(fileStr);
         const hasOptOut = /(^|\n)\s*\/\/\s*@no-hot\s*($|\n)/.test(fileStr);
-        const shouldHot = hotMode === "opt-in" ? hasOptIn : !hasOptOut;
+        const shouldHot = hot === "opt-in" ? hasOptIn : !hasOptOut;
         if (shouldHot) {
           log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
           file = await injectHotImports(fileStr, path, directory);

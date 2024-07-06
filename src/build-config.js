@@ -4,34 +4,29 @@ import { isPreset, presets } from "./presets/index.js";
 import { fileExists } from "./utils/file-exists.js";
 import { join } from "node:path";
 import { pathToFileURL } from "url";
-import { DEFAULT_BUILD_DIR } from "./constants.js";
 
 export class BuildConfig {
   /** @type {boolean} */
-  clean = false;
-  /** @type {boolean} */
-  watch = false;
-  /** @type {ServeOptions | null} */
-  serve = null;
+  watch;
+  /** @type {ServeOptions | false} */
+  serve;
   /** @type {string[]} */
-  ignoredFolders = ["node_modules", ".git"];
+  ignoredFolders;
   /** @type {BuildModule[]} */
-  pipeline = [];
+  pipeline;
 
   /**
    *  @param {Object} options
    *  @param {BuildModule[]} options.pipeline
-   *  @param {boolean} [options.clean]
    *  @param {boolean} [options.watch]
    *  @param {ServeOptions} [options.serve]
-   *
    *  @param {string[]} [options.ignoredFolders]
    */
   constructor(options) {
-    this.pipeline = options.pipeline ?? this.pipeline;
-    this.watch = options.watch ?? this.watch;
-    this.serve = options.serve ?? this.serve;
-    this.ignoredFolders = options.ignoredFolders ?? this.ignoredFolders;
+    this.pipeline = options.pipeline ?? [];
+    this.watch = options.watch ?? false;
+    this.serve = options.serve ?? false;
+    this.ignoredFolders = options.ignoredFolders ?? ["node_modules", ".git"];
   }
 }
 
@@ -88,22 +83,13 @@ async function getBuildConfigPath() {
  * @property {string} address
  * @property {string} directory
  * @property {boolean} [live]
- * @property {boolean | HotOptions} [hot]
+ * @property {false | "opt-in" | "opt-out"} [hot]
  * @property {boolean} [open]
- */
-
-/**
- * @typedef {Object} HotOptions
- * @property {HotMode} [mode]
- */
-
-/**
- * @typedef {"opt-in" | "opt-out"} HotMode
  */
 
 /** @type {ServeOptions} */
 export const DEFAULT_SERVE_OPTIONS = {
-  port: 8080,
+  port: 3007,
   address: "localhost",
-  directory: DEFAULT_BUILD_DIR,
+  directory: ".",
 };
