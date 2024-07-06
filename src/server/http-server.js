@@ -45,6 +45,11 @@ function createRequestHandler(options) {
       path = "/index.html";
     }
 
+    const filename = path?.split("/").pop();
+    if (!filename?.includes(".")) {
+      path += ".html";
+    }
+
     let wasInjected = false;
     if (path.startsWith("/@injected/")) {
       const injectedSourceDir = join(import.meta.dirname, "injected");
