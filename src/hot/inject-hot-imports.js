@@ -25,6 +25,7 @@ export async function injectHotImports(originalCode, modulePath, rootPath) {
       path: importPath,
       exportName,
       importName,
+      attributes,
     } = importInfo;
 
     const {
@@ -36,7 +37,8 @@ export async function injectHotImports(originalCode, modulePath, rootPath) {
       continue;
     }
 
-    let assign = `${importName} = {...await modules.get("${canonicalPath}")}`;
+    const attributesStr = attributes ? `, ${attributes}` : "";
+    let assign = `${importName} = {...await modules.get("${canonicalPath}"${attributesStr})}`;
     if (exportName !== "*") {
       assign += `["${exportName}"]`;
     }

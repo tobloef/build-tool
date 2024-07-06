@@ -86,7 +86,7 @@ export class ServeOptions {
   directory;
   /** @type {boolean} */
   live;
-  /** @type {boolean | "opt-in" | "opt-out"} */
+  /** @type {boolean} */
   hot;
   /** @type {boolean} */
   open;
@@ -97,7 +97,7 @@ export class ServeOptions {
    * @param {string} [options.address]
    * @param {string} [options.directory]
    * @param {boolean} [options.live]
-   * @param {boolean | "opt-in" | "opt-out"} [options.hot]
+   * @param {boolean} [options.hot]
    * @param {boolean} [options.open]
    */
   constructor(options) {

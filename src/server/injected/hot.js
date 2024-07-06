@@ -10,8 +10,11 @@ let moduleCache = {};
 let nextId = 0;
 
 export const modules = {
-  /** @param {string} canonicalPath */
-  get: async (canonicalPath) => {
+  /**
+   * @param {string} canonicalPath
+   * @param {Record<string, string>} attributes
+   */
+  get: async (canonicalPath, attributes) => {
     if (moduleCache[canonicalPath]) {
       console.debug(`Loading module "${canonicalPath}" from cache`);
       return await moduleCache[canonicalPath];
@@ -19,7 +22,10 @@ export const modules = {
 
     console.debug(`Importing module "${canonicalPath}"`);
     moduleCache[canonicalPath] = new Promise(async (resolve) => {
-      const module = await import((`${canonicalPath}?noCache=${Date.now()}`));
+      const module = await import(
+        `${canonicalPath}?noCache=${Date.now()}`,
+        attributes ? { with: attributes } : undefined,
+      );
       resolve(module);
     });
 

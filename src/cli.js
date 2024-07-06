@@ -28,7 +28,7 @@ async function cli() {
   buildConfig.serve = args.serve && !buildConfig.serve ? new ServeOptions() : buildConfig.serve;
   if (buildConfig.serve) {
     buildConfig.serve.live = args.live ?? buildConfig.serve.live;
-    buildConfig.serve.hot = args.hot ? "opt-out" : buildConfig.serve.hot;
+    buildConfig.serve.hot = args.hot ?? buildConfig.serve.hot;
     buildConfig.serve.open = args.open ?? buildConfig.serve.open;
   }
 

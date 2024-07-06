@@ -15,19 +15,22 @@ const oneOrMoreImports = `(?<imports>${someImport}(?:,\\s+${someImport})*)`;
 
 const path = `(?<path>["'][^"']*?["'])`;
 
-const importStatement = `import\\s+${oneOrMoreImports}\\s+from\\s+${path};?`;
+const attributes = `(?:with\\s+(?<attributes>\\{(\\s|.)*?\\}))`;
 
+const importStatement = `import\\s+${oneOrMoreImports}\\s+from\\s+${path}(?:\\s+${attributes})?;?`;
+
+const pairRegex = new RegExp(pair, "g");
 const namedImportsRegex = new RegExp(namedImports, "g");
 const namespaceImportRegex = new RegExp(namespaceImport, "g");
 const defaultImportRegex = new RegExp(defaultImport, "g");
 const importRegex = new RegExp(importStatement, "g");
-const pairRegex = new RegExp(pair, "g");
 
 /**
  * @typedef {Object} ImportInfo
  * @property {string} path
  * @property {string} exportName
  * @property {string} importName
+ * @property {string} [attributes]
  */
 
 /**
@@ -44,6 +47,7 @@ export function parseImports(code) {
       namedGroups: {
         imports: importsString,
         path: pathString,
+        attributes: attributesString,
       },
     } = match;
 
@@ -82,6 +86,7 @@ export function parseImports(code) {
           path,
           exportName,
           importName: importName ?? exportName,
+          attributes: attributesString,
         });
       }
     }
@@ -94,6 +99,7 @@ export function parseImports(code) {
         path,
         exportName,
         importName,
+        attributes: attributesString,
       });
     }
 
@@ -105,6 +111,7 @@ export function parseImports(code) {
         path,
         exportName,
         importName,
+        attributes: attributesString,
       });
     }
   }

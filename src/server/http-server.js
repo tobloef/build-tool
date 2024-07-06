@@ -84,13 +84,8 @@ function createRequestHandler(options) {
       const isNodeModule = path.match(/(^|\/)node_modules\//);
       if (hot && !isNodeModule && !wasInjected && isRelative) {
         const fileStr = file.toString();
-        const hasOptIn = /(^|\n)\s*\/\/\s*@hot\s*($|\n)/.test(fileStr);
-        const hasOptOut = /(^|\n)\s*\/\/\s*@no-hot\s*($|\n)/.test(fileStr);
-        const shouldHot = hot === "opt-in" ? hasOptIn : !hasOptOut;
-        if (shouldHot) {
-          log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
-          file = await injectHotImports(fileStr, path, directory);
-        }
+        log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
+        file = await injectHotImports(fileStr, path, directory);
       }
     }
 
