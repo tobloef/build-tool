@@ -130,12 +130,14 @@ function parseImportPath(importPath, parentPath, rootPath) {
  * @param {string} params.rootPath
  * @returns {string}
  */
-function generateSourceMapForOffset({
-  originalCode,
-  offset,
-  filePath,
-  rootPath,
-}) {
+function generateSourceMapForOffset(params) {
+  const {
+    originalCode,
+    offset,
+    filePath,
+    rootPath,
+  } = params;
+
   if (offset < 0) {
     throw new Error("Offset must not be negative");
   }
