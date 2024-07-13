@@ -6,7 +6,7 @@ const exportedName = `(${identifier})`;
 const pair = `(${exportedName}${importedName}?)`;
 const oneOrMorePairs = `(?:${pair}(?:,\\s+${pair})*)`;
 
-const namedImports = `(?:\\{\\s+${oneOrMorePairs}?\\s+\\})`;
+const namedImports = `(?:\\{\\s*${oneOrMorePairs}?\\s*\\})`;
 const namespaceImport = `(?:(\\*)${importedName}?)`;
 const defaultImport = `(?:(${identifier})${importedName}?)`;
 
@@ -17,7 +17,7 @@ const path = `(?<path>["'][^"']*?["'])`;
 
 const attributes = `(?:with\\s+(?<attributes>\\{(\\s|.)*?\\}))`;
 
-const importStatement = `(^|\\n)\\s*import\\s+${oneOrMoreImports}\\s+from\\s+${path}(?:\\s+${attributes})?;?`;
+const importStatement = `(^|\\r?\\n)\\s*import\\s+${oneOrMoreImports}\\s+from\\s+${path}(?:\\s+${attributes})?;?`;
 
 const pairRegex = new RegExp(pair, "g");
 const namedImportsRegex = new RegExp(namedImports, "g");
@@ -172,5 +172,52 @@ function consumeMatches(string, regex) {
  * @return string
  */
 export function commentOutImports(code) {
-  return code.replace(importRegex, (match) => `/*${match}*/`);
+  const matches = code.matchAll(importRegex);
+
+  let offset = 0;
+  for (const match of matches) {
+    const { index, groups } = match;
+    const start = index + offset;
+    const end = start + match[0].length;
+
+    const importPath = groups?.path.slice(1, -1);
+
+    if (!importPath) {
+      throw new Error(`No import path found for import statement: ${match[0]}`);
+    }
+
+    const { isBare } = getImportPathInfo(importPath);
+
+    if (!isBare) {
+      code = code.slice(0, start) + "/*" + code.slice(start, end) + "*/" + code.slice(end);
+      offset += 4;
+    }
+  }
+
+  return code;
+}
+
+/**
+ * @param {string} path
+ * @return {{
+ *   isAbsolute: boolean,
+ *   isRelative: boolean,
+ *   isBare: boolean
+ * }}
+ */
+export function getImportPathInfo(path) {
+  const isAbsolute = path.startsWith("/");
+
+  const isRelative = (
+    path.startsWith("./") ||
+    path.startsWith("../")
+  );
+
+  const isBare = !isAbsolute && !isRelative;
+
+  return {
+    isAbsolute,
+    isRelative,
+    isBare,
+  };
 }

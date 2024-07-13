@@ -1,5 +1,5 @@
 import { dirname, resolve } from "path";
-import { commentOutImports, parseImports } from "./imports.js";
+import { commentOutImports, parseImports, getImportPathInfo } from "./imports.js";
 
 /**
  * @param {string} originalCode
@@ -10,7 +10,7 @@ import { commentOutImports, parseImports } from "./imports.js";
 export async function injectHotImports(originalCode, modulePath, rootPath) {
   const imports = parseImports(originalCode);
 
-  originalCode = commentOutImports(originalCode);
+  let remainingCode = commentOutImports(originalCode);
 
   const UNIQUE_STRING = "UFVWldpE"; // Prevent collisions
   const reimportFunction = `reimport_${UNIQUE_STRING}`;
@@ -49,7 +49,7 @@ export async function injectHotImports(originalCode, modulePath, rootPath) {
     listeners.add(`modules.onReload("${canonicalPath}", ${reimportFunction});`);
   }
 
-  let addedCode = "";
+  let addedCode = "////////// START OF INJECTED HOT-RELOAD CODE //////////\n\n";
 
   if (imports.length > 0) {
     addedCode += (
@@ -66,12 +66,13 @@ export async function injectHotImports(originalCode, modulePath, rootPath) {
       (listeners.size > 0 ? "\n\t" : "") +
       `${Array.from(listeners).join("\n\t")}` +
       (listeners.size > 0 ? "\n" : "") +
-      "})();" +
-      (originalCode.length > 0 ? "\n\n" : "")
+      "})();"
     );
   }
 
-  const generatedCode = addedCode + originalCode;
+  addedCode += "\n\n////////// END OF INJECTED HOT-RELOAD CODE //////////\n\n"
+
+  const generatedCode = addedCode + remainingCode;
 
   const sourceMap = generateSourceMapForOffset({
     offset: addedCode.split("\n").length - 1,
@@ -94,14 +95,7 @@ export async function injectHotImports(originalCode, modulePath, rootPath) {
  * @return {{ isBare: boolean, canonicalPath: string }}
  */
 function parseImportPath(importPath, parentPath, rootPath) {
-  const isAbsolute = importPath.startsWith("/");
-
-  const isRelative = (
-    importPath.startsWith("./") ||
-    importPath.startsWith("../")
-  );
-
-  const isBare = !isAbsolute && !isRelative;
+  const { isRelative, isBare } = getImportPathInfo(importPath);
 
   if (!isRelative) {
     return {
