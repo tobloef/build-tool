@@ -6,6 +6,9 @@ export class HotReload {
   /** @type {boolean} */
   fullReloadFallback = true;
 
+  /** @type {boolean} */
+  logging = true;
+
   /** @type {"every" | "some"} */
   acceptMode = "every";
 
@@ -23,9 +26,16 @@ export class HotReload {
 
   /**
    * @param {string} importUrl
+   * @param {Object} [options]
+   * @param {boolean} [options.fullReloadFallback]
+   * @param {boolean} [options.logging]
+   * @param {"every" | "some"} [options.acceptMode]
    */
-  constructor(importUrl) {
+  constructor(importUrl, options) {
     this.importUrl = importUrl;
+    this.fullReloadFallback = options?.fullReloadFallback ?? this.fullReloadFallback;
+    this.logging = options?.logging ?? this.logging;
+    this.acceptMode = options?.acceptMode ?? this.acceptMode;
   }
 
   /**
@@ -44,6 +54,13 @@ export class HotReload {
       ...this.#callbacks[canonicalUrl],
       {callback, meta: meta ?? {}},
     ];
+
+    if (this.logging) {
+      console.debug("Subscribed to hot reload", {
+        canonicalUrl,
+        relativeUrl: url,
+      });
+    }
   }
 
   /**
@@ -55,20 +72,29 @@ export class HotReload {
 
     this.#callbacks[canonicalUrl] = this.#callbacks[canonicalUrl]
       ?.filter(({callback: cb}) => cb !== callback);
+
+    if (this.logging) {
+      console.debug("Unsubscribed from hot reload", {
+        canonicalUrl,
+        relativeUrl: url,
+      });
+    }
   }
 
   /**
    * @param {string} url
+   * @returns {Promise<boolean>} Whether the hot reload was accepted by any of the callbacks.
    */
   async trigger(url) {
     const canonicalUrl = this.getCanonicalUrl(url);
 
-    if (this.#callbacks[canonicalUrl] === undefined) {
+    const callbacks = this.#callbacks[canonicalUrl];
+
+    if (callbacks === undefined) {
       return false;
     }
 
-    const promises = this.#callbacks[canonicalUrl]
-      .map(async ({callback, meta}) => callback(meta));
+    const promises = callbacks.map(async ({callback, meta}) => callback(meta));
 
     const results = await Promise.all(promises);
 
@@ -84,6 +110,15 @@ export class HotReload {
         assertExhaustive(this.acceptMode);
     }
 
+    if (this.logging) {
+      console.debug("Triggered hot reload", {
+        canonicalUrl,
+        relativeUrl: url,
+        callbackCount: callbacks.length,
+        accepted: wasAccepted,
+      });
+    }
+
     if (!wasAccepted && this.fullReloadFallback) {
       this.#fullReload();
     }
@@ -96,11 +131,14 @@ export class HotReload {
    * @returns {string}
    */
   getCanonicalUrl(url) {
-    // TODO
-    return ""
+    const canonicalUrl = new URL(url, this.importUrl).href;
+    return canonicalUrl;
   }
 
   #fullReload() {
+    if (this.logging) {
+      console.debug("Doing full reload.");
+    }
     window.location.reload();
   }
 }

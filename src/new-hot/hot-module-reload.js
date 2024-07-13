@@ -17,9 +17,17 @@ export class HotModuleReload extends HotReload {
    */
   #moduleCache = {};
 
-  /** @param {string} importUrl */
-  constructor(importUrl) {
-    super(importUrl);
+  /**
+   * @param {string} importUrl
+   * @param {Object} [options]
+   * @param {boolean} [options.fullReloadFallback]
+   * @param {boolean} [options.logging]
+   * @param {"every" | "some"} [options.acceptMode]
+   * @param {boolean} [options.cache]
+   */
+  constructor(importUrl, options) {
+    super(importUrl, options);
+    this.cache = options?.cache ?? this.cache;
   }
 
   /**
@@ -60,7 +68,7 @@ export class HotModuleReload extends HotReload {
       const attributes = meta.attributes;
       const newModule = await this.#importModule(canonicalPath, attributes);
 
-      callback?.(newModule);
+      return callback?.(newModule);
     };
 
     super.subscribe(relativePath, wrappedCallback, {attributes});

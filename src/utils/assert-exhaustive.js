@@ -4,5 +4,5 @@
  * @param {never} value
  */
 export function assertExhaustive(value) {
-	throw new Error(`Unhandled value: ${value}`);
+  throw new Error(`Unhandled value: ${value}`);
 }
