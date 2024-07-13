@@ -1,4 +1,6 @@
-import { HotModuleReplacement } from "./hot-module-replacement.js";
+// @ts-nocheck
+
+import {HotModuleReload} from "../hot-module-reload.js";
 
 let foo;
 let bar;
@@ -6,12 +8,12 @@ let baz1;
 let baz2;
 
 await (async () => {
-  const hmr = new HotModuleReplacement(import.meta.url);
+  const hmr = new HotModuleReload(import.meta.url);
 
   hmr.subscribe("./foo.js", (newModule) => {
     foo = newModule;
   });
-  hmr.subscribe("./bar.json", { type: "json" }, (newModule) => {
+  hmr.subscribe("./bar.json", {type: "json"}, (newModule) => {
     bar = newModule;
   });
   hmr.subscribe("./baz.js", (newModule) => {

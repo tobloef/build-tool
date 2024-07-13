@@ -1,11 +1,13 @@
-import { HotModuleReplacement } from "./hot-module-replacement.js";
-import { HotReload } from "./hot-reload.js";
+// @ts-nocheck
+
+import {HotModuleReload} from "../hot-module-reload.js";
+import {HotReload} from "../hot-reload.js";
 
 const hot = new HotReload(import.meta.url);
-const hmr = new HotModuleReplacement(import.meta.url);
+const hmr = new HotModuleReload(import.meta.url);
 
 hmr.subscribe("./sub-folder/some-module.js", callback);
-hmr.subscribe("./sub-folder/some-module.js", { type: "json" }, callback);
+hmr.subscribe("./sub-folder/some-module.js", {type: "json"}, callback);
 
 hmr.unsubscribe("./sub-folder/some-module.js", callback);
 

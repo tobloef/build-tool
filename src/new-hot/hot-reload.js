@@ -1,4 +1,6 @@
-import { assertExhaustive } from "../utils/assert-exhaustive.js";
+import {assertExhaustive} from "../utils/assert-exhaustive.js";
+
+/** @typedef {(meta: Record<string, unknown>) => Promise<void>} HotReloadCallback */
 
 export class HotReload {
   /** @type {boolean} */
@@ -7,15 +9,28 @@ export class HotReload {
   /** @type {"every" | "some"} */
   acceptMode = "every";
 
+  /**
+   * Maps canonical URLs to arrays of callbacks.
+   * @type {Record<
+   *   string,
+   *   Array<{
+   *     callback: HotReloadCallback,
+   *     meta: Record<string, unknown>
+   *   }>
+   * >}
+   */
   #callbacks = {};
 
+  /**
+   * @param {string} importUrl
+   */
   constructor(importUrl) {
     this.importUrl = importUrl;
   }
 
   /**
    * @param {string} url
-   * @param {Callback} callback
+   * @param {HotReloadCallback} callback
    * @param {Record<string, unknown>} [meta]
    */
   subscribe(url, callback, meta) {
@@ -27,21 +42,24 @@ export class HotReload {
 
     this.#callbacks[canonicalUrl] = [
       ...this.#callbacks[canonicalUrl],
-      { callback, meta: meta ?? {} },
+      {callback, meta: meta ?? {}},
     ];
   }
 
   /**
    * @param {string} url
-   * @param {Callback} callback
+   * @param {HotReloadCallback} callback
    */
   unsubscribe(url, callback) {
     const canonicalUrl = this.getCanonicalUrl(url);
 
     this.#callbacks[canonicalUrl] = this.#callbacks[canonicalUrl]
-      ?.filter(({ callback: cb }) => cb !== callback);
+      ?.filter(({callback: cb}) => cb !== callback);
   }
 
+  /**
+   * @param {string} url
+   */
   async trigger(url) {
     const canonicalUrl = this.getCanonicalUrl(url);
 
@@ -50,7 +68,7 @@ export class HotReload {
     }
 
     const promises = this.#callbacks[canonicalUrl]
-      .map(async ({ callback, meta }) => callback(meta));
+      .map(async ({callback, meta}) => callback(meta));
 
     const results = await Promise.all(promises);
 
@@ -73,8 +91,13 @@ export class HotReload {
     return wasAccepted;
   }
 
+  /**
+   * @param {string} url
+   * @returns {string}
+   */
   getCanonicalUrl(url) {
     // TODO
+    return ""
   }
 
   #fullReload() {
