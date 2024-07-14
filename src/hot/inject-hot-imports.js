@@ -1,5 +1,5 @@
-import { dirname, resolve } from "path";
 import { commentOutImports, parseImports, getImportPathInfo } from "./imports.js";
+import { join } from "../utils/paths.js";
 
 /**
  * @param {string} originalCode
@@ -104,9 +104,18 @@ function parseImportPath(importPath, parentPath, rootPath) {
     };
   }
 
-  const canonicalPath = resolve(dirname(parentPath), importPath)
-    .replace(resolve(rootPath), "")
-    .replace(/\\/g, "/");
+  const parentDir = join(parentPath, "..");
+
+  let canonicalPath = join(parentDir, importPath);
+
+  if (canonicalPath.startsWith(rootPath) && rootPath !== ".") {
+    canonicalPath = canonicalPath.slice(rootPath.length);
+    if (!canonicalPath.startsWith("./")) {
+      canonicalPath = `./${canonicalPath}`;
+    }
+  }
+
+  console.log(canonicalPath);
 
   return {
     isBare,

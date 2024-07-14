@@ -120,54 +120,6 @@ export function parseImports(code) {
 }
 
 /**
- * @typedef {Object} RegexMatch
- * @property {number} start
- * @property {number} end
- * @property {string} matchedText
- * @property {Record<string, string>} namedGroups
- * @property {string[]} unnamedGroups
- */
-
-/**
- * @param {string} string
- * @param {RegExp} regex
- * @return {{ remaining: string, matches: RegexMatch[] }}
- */
-function consumeMatches(string, regex) {
-  let remaining = string;
-
-  let matches = [...remaining.matchAll(regex)].map((match) => ({
-    /** @type {number} */
-    start: match.index,
-    /** @type {number} */
-    end: match.index + match[0].length,
-    /** @type {string} */
-    matchedText: match[0],
-    /** @type {Record<string, string>} */
-    namedGroups: match.groups ?? {},
-    /** @type {string[]} */
-    unnamedGroups: match.slice(1),
-  }));
-
-  for (const match of matches) {
-    const { start, end } = match;
-
-    const sliceSize = end - start;
-
-    remaining = remaining.slice(0, start) + remaining.slice(end);
-
-    for (const match of matches) {
-      if (match.start > start) {
-        match.start -= sliceSize;
-        match.end -= sliceSize;
-      }
-    }
-  }
-
-  return { remaining, matches };
-}
-
-/**
  * @param {string} code
  * @return string
  */
@@ -220,4 +172,52 @@ export function getImportPathInfo(path) {
     isRelative,
     isBare,
   };
+}
+
+/**
+ * @typedef {Object} RegexMatch
+ * @property {number} start
+ * @property {number} end
+ * @property {string} matchedText
+ * @property {Record<string, string>} namedGroups
+ * @property {string[]} unnamedGroups
+ */
+
+/**
+ * @param {string} string
+ * @param {RegExp} regex
+ * @return {{ remaining: string, matches: RegexMatch[] }}
+ */
+function consumeMatches(string, regex) {
+  let remaining = string;
+
+  let matches = [...remaining.matchAll(regex)].map((match) => ({
+    /** @type {number} */
+    start: match.index,
+    /** @type {number} */
+    end: match.index + match[0].length,
+    /** @type {string} */
+    matchedText: match[0],
+    /** @type {Record<string, string>} */
+    namedGroups: match.groups ?? {},
+    /** @type {string[]} */
+    unnamedGroups: match.slice(1),
+  }));
+
+  for (const match of matches) {
+    const { start, end } = match;
+
+    const sliceSize = end - start;
+
+    remaining = remaining.slice(0, start) + remaining.slice(end);
+
+    for (const match of matches) {
+      if (match.start > start) {
+        match.start -= sliceSize;
+        match.end -= sliceSize;
+      }
+    }
+  }
+
+  return { remaining, matches };
 }

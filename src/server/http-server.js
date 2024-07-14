@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import { getMimeType } from "../utils/get-mime-type.js";
 import { join } from "node:path";
 import { injectHotImports } from "../hot/inject-hot-imports.js";
+import { normalizeSlashes } from "../utils/paths.js";
 
 /** @import { IncomingMessage, ServerResponse, Server } from "node:http"; */
 
@@ -30,10 +31,12 @@ function createRequestHandler(options) {
   const {
     live,
     hot,
-    directory,
+    directory: rawDirectory,
     address,
     port,
   } = options;
+
+  const directory = normalizeSlashes(rawDirectory);
 
   return async (req, res) => {
     const url = new URL(req.url ?? "", `http://${address}:${port}`);
@@ -83,9 +86,9 @@ function createRequestHandler(options) {
       const isRelative = path.startsWith(directory);
       const isNodeModule = path.match(/(^|\/|\\)node_modules(\/|\\)/);
       if (hot && !isNodeModule && !wasInjected && isRelative) {
-        const fileStr = file.toString();
-        log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
-        file = await injectHotImports(fileStr, path, directory);
+        // const fileStr = file.toString();
+        // log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
+        // file = await injectHotImports(fileStr, path, directory);
       }
     }
 
