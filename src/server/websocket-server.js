@@ -33,16 +33,7 @@ function createConnectionHandler(options) {
     log(LogLevel.VERBOSE, "WebSocket connection opened");
 
     /** @type {() => void} */
-    let unsubscribeLiveReload;
-    /** @type {() => void} */
     let unsubscribeHotReload;
-
-    if (options.live) {
-      unsubscribeLiveReload = buildEvents.liveReload.subscribe(async () => {
-        log(LogLevel.VERBOSE, "Sending live reload message to client");
-        socket.send("live reload");
-      });
-    }
 
     if (options.hot) {
       unsubscribeHotReload = buildEvents.hotReload.subscribe(async (event) => {
@@ -58,7 +49,6 @@ function createConnectionHandler(options) {
     socket.on("close", () => {
       log(LogLevel.VERBOSE, "WebSocket connection closed");
 
-      unsubscribeLiveReload?.();
       unsubscribeHotReload?.();
     });
 

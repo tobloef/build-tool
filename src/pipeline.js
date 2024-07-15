@@ -1,10 +1,10 @@
-
 import { log, LogLevel } from "./utils/logging.js";
 import { watch } from "fs/promises";
 import { buildEvents } from "./events.js";
 import { debounce } from "./utils/debounce.js";
 import { resolve } from "path";
 import { lstat } from "node:fs/promises";
+import { normalizeSlashes } from "./utils/paths.js";
 
 /** @import { BuildConfig } from "./build-config.js"; */
 
@@ -103,33 +103,32 @@ function setupReloadEvents(buildConfig) {
     return;
   }
 
-  const absoluteBuildPath = resolve(buildConfig.serve.directory);
+  let absoluteBuildPath = normalizeSlashes(resolve(buildConfig.serve.directory));
+  if (!absoluteBuildPath.endsWith("/")) {
+    absoluteBuildPath += "/";
+  }
 
   buildEvents.fileChanged.subscribe(async (event) => {
     log(LogLevel.VERBOSE, `File changed: ${event.data.relative} (${event.data.absolute})`);
+
+    if (!buildConfig.serve) {
+      return;
+    }
 
     if (!event.data.absolute.startsWith(absoluteBuildPath)) {
       return;
     }
 
+    const rootUrl = `http://${buildConfig.serve.address}:${buildConfig.serve.port}`;
+    const path = event.data.absolute.slice(absoluteBuildPath.length);
+    const canonicalPath = `${rootUrl}/${path}`;
 
-    const shouldHotReload = true;
-    const shouldLiveReload = !shouldHotReload;
+    let hotPatterns = buildConfig.serve ? buildConfig.serve.hot.patterns : [];
 
-    const canonicalPath = event.data.absolute
-      .replace(absoluteBuildPath, "")
-      .replace(/\\/g, "/");
-
-    if (canonicalPath === "") {
+    if (!hotPatterns.some((pattern) => pattern.test(canonicalPath))) {
       return;
     }
 
-    if (shouldHotReload) {
-      buildEvents.hotReload.publish(canonicalPath);
-    }
-
-    if (shouldLiveReload) {
-      buildEvents.liveReload.publish();
-    }
+    buildEvents.hotReload.publish(canonicalPath);
   });
 }

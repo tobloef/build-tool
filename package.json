@@ -20,7 +20,8 @@
     "check": "tsc --project jsconfig.json"
   },
   "dependencies": {
-    "ws": "^8.17.1"
+    "ws": "^8.17.1",
+    "@tobloef/hot-reload": "../hot-reload"
   },
   "devDependencies": {
     "@types/node": "^20.14.8",

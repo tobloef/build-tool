@@ -4,8 +4,8 @@ import { fileExists } from "../utils/file-exists.js";
 import { readFile } from "node:fs/promises";
 import { getMimeType } from "../utils/get-mime-type.js";
 import { join } from "node:path";
-import { injectHotImports } from "../hot/inject-hot-imports.js";
 import { normalizeSlashes } from "../utils/paths.js";
+import { injectHotImports } from "@tobloef/hot-reload";
 
 /** @import { IncomingMessage, ServerResponse, Server } from "node:http"; */
 
@@ -29,7 +29,6 @@ export function createHttpServer(options) {
  */
 function createRequestHandler(options) {
   const {
-    live,
     hot,
     directory: rawDirectory,
     address,
@@ -73,12 +72,8 @@ function createRequestHandler(options) {
     let file = await readFile(path);
 
     if (path.endsWith(".html")) {
-      if (live) {
-        file = await injectScript(path, file, "live.js");
-      }
-
       if (hot) {
-        file = await injectScript(path, file, "hot.js");
+        file = await injectScript(path, file, "hot-reload.js");
       }
     }
 
@@ -86,9 +81,9 @@ function createRequestHandler(options) {
       const isRelative = path.startsWith(directory);
       const isNodeModule = path.match(/(^|\/|\\)node_modules(\/|\\)/);
       if (hot && !isNodeModule && !wasInjected && isRelative) {
-        // const fileStr = file.toString();
-        // log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
-        // file = await injectHotImports(fileStr, path, directory);
+        const fileStr = file.toString();
+        log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
+        file = await injectHotImports(fileStr, path, directory);
       }
     }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { log, LogLevel, setLogLevel } from "./utils/logging.js";
-import { getBuildConfig, ServeOptions } from "./build-config.js";
+import { getBuildConfig, HotConfig, ServeOptions } from "./build-config.js";
 import { inspect, parseArgs } from "node:util";
 import { runPipelineContinuously, runPipelineOnce } from "./pipeline.js";
 import { createHttpServer } from "./server/http-server.js";
@@ -27,8 +27,7 @@ async function cli() {
   buildConfig.watch = args.watch ?? buildConfig.watch;
   buildConfig.serve = args.serve && !buildConfig.serve ? new ServeOptions() : buildConfig.serve;
   if (buildConfig.serve) {
-    buildConfig.serve.live = args.live ?? buildConfig.serve.live;
-    buildConfig.serve.hot = args.hot ?? buildConfig.serve.hot;
+    buildConfig.serve.hot = args.hot ? new HotConfig() : buildConfig.serve.hot;
     buildConfig.serve.open = args.open ?? buildConfig.serve.open;
   }
 
@@ -54,7 +53,6 @@ function getArgs() {
       quiet: { type: "boolean" },
       watch: { type: "boolean" },
       serve: { type: "boolean" },
-      live: { type: "boolean" },
       hot: { type: "boolean" },
       open: { type: "boolean" },
     },
@@ -70,16 +68,12 @@ function getArgs() {
  */
 async function startServer(server, serveOptions) {
   return new Promise((resolve) => {
-    const { port, address, live } = serveOptions;
+    const { port, address } = serveOptions;
 
     server.listen(port, address, () => {
       const url = `http://${address}:${port}/`;
 
       log(LogLevel.INFO, `🌐 Dev server running at ${url}`);
-
-      if (live) {
-        log(LogLevel.INFO, "🔄 Live reloading enabled");
-      }
 
       if (serveOptions.hot) {
         log(LogLevel.INFO, "🔥 Hot reloading enabled");

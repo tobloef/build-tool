@@ -77,6 +77,24 @@ async function getBuildConfigPath() {
   process.exit(1);
 }
 
+export class HotConfig {
+  /** @type {boolean} */
+  enabled;
+
+  /** @type {RegExp[]} */
+  patterns;
+
+  /**
+   * @param {Object} [options]
+   * @param {boolean} [options.enabled]
+   * @param {RegExp[]} [options.patterns]
+   */
+  constructor(options) {
+    this.enabled = options?.enabled ?? true;
+    this.patterns = options?.patterns ?? [/\.js$/];
+  }
+}
+
 export class ServeOptions {
   /** @type {number} */
   port;
@@ -84,9 +102,7 @@ export class ServeOptions {
   address;
   /** @type {string} */
   directory;
-  /** @type {boolean} */
-  live;
-  /** @type {boolean} */
+  /** @type {HotConfig} */
   hot;
   /** @type {boolean} */
   open;
@@ -96,17 +112,22 @@ export class ServeOptions {
    * @param {number} [options.port]
    * @param {string} [options.address]
    * @param {string} [options.directory]
-   * @param {boolean} [options.live]
-   * @param {boolean} [options.hot]
+   * @param {boolean | HotConfig} [options.hot]
    * @param {boolean} [options.open]
    */
   constructor(options) {
     this.port = options?.port ?? 3007;
     this.address = options?.address ?? "localhost";
     this.directory = options?.directory ?? ".";
-    this.live = options?.live ?? false;
-    this.hot = options?.hot ?? false;
     this.open = options?.open ?? false;
+
+    if (options?.hot === true) {
+      this.hot = new HotConfig();
+    } else if (options?.hot === false) {
+      this.hot = new HotConfig({ enabled: false });
+    } else {
+      this.hot = options?.hot ?? new HotConfig();
+    }
   }
 }
 

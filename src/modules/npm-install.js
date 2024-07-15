@@ -74,7 +74,7 @@ export class NpmInstall extends BuildModule {
         throw new Error(`Got non-zero exit code ${exitCode}`);
       }
 
-      buildEvents.liveReload.publish();
+      buildEvents.hotReload.publish("node_modules/");
     } catch (error) {
       throw new Error(`Failed to install dependencies`);
     }
