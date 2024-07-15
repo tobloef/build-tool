@@ -1,5 +1,5 @@
 import { log, LogLevel } from "./utils/logging.js";
-import { watch } from "fs/promises";
+import { watch } from "fs";
 import { buildEvents } from "./events.js";
 import { debounce } from "./utils/debounce.js";
 import { resolve } from "path";
@@ -49,15 +49,13 @@ export async function runPipelineContinuously(buildConfig) {
 async function watchFiles(buildConfig) {
   let perPathDebouncedHandlers = new Map();
 
-  for await (const event of watch(".", { recursive: true })) {
-    const { filename } = event;
-
+  watch(".", { recursive: true }, async (eventType, filename) => {
     if (filename === null) {
-      continue;
+      return;
     }
 
     if (filename.endsWith("~")) {
-      continue;
+      return;
     }
 
     const absolutePath = resolve(filename);
@@ -65,7 +63,7 @@ async function watchFiles(buildConfig) {
     const absoluteIgnoredFolders = buildConfig.ignoredFolders.map((folder) => resolve(folder));
 
     if (absoluteIgnoredFolders.some((folder) => absolutePath.startsWith(folder))) {
-      continue;
+      return;
     }
 
     let isFolder = false;
@@ -77,7 +75,7 @@ async function watchFiles(buildConfig) {
     }
 
     if (isFolder) {
-      continue;
+      return;
     }
 
     if (!perPathDebouncedHandlers.has(absolutePath)) {
@@ -91,7 +89,7 @@ async function watchFiles(buildConfig) {
     }
 
     perPathDebouncedHandlers.get(absolutePath)();
-  }
+  });
 }
 
 /**
