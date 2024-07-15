@@ -4,6 +4,8 @@ import { fileExists } from "../utils/file-exists.js";
 import { readFile } from "node:fs/promises";
 import { getMimeType } from "../utils/get-mime-type.js";
 import { join } from "node:path";
+import { normalizeSlashes } from "../utils/paths.js";
+import { injectHotImports } from "@tobloef/hot-reload";
 
 /** @import { IncomingMessage, ServerResponse, Server } from "node:http"; */
 
@@ -27,20 +29,33 @@ export function createHttpServer(options) {
  */
 function createRequestHandler(options) {
   const {
-    live,
-    directory,
+    hot,
+    directory: rawDirectory,
+    address,
+    port,
   } = options;
 
-  return async (req, res) => {
+  const directory = normalizeSlashes(rawDirectory);
 
-    let path = req.url;
+  return async (req, res) => {
+    const url = new URL(req.url ?? "", `http://${address}:${port}`);
+
+    let path = url.pathname;
+
     if (path === undefined || path === "/") {
       path = "/index.html";
     }
 
-    if (path.startsWith("@injected/")) {
-      const thisDirectory = join(import.meta.dirname, "injected");
-      path = path.replace("@injected/", `${thisDirectory}/`);
+    const filename = path?.split("/").pop();
+    if (!filename?.includes(".")) {
+      path += ".html";
+    }
+
+    let wasInjected = false;
+    if (path.startsWith("/@injected/")) {
+      const injectedSourceDir = join(import.meta.dirname, "injected").replace(/\\/g, "/");
+      path = path.replace("/@injected/", `${injectedSourceDir}/`);
+      wasInjected = true;
     } else {
       path = `${directory}${path}`;
     }
@@ -53,10 +68,23 @@ function createRequestHandler(options) {
       return;
     }
 
+    /** @type {Buffer | string} */
     let file = await readFile(path);
 
-    if (live && path.endsWith(".html")) {
-      file = await injectScript(path, file, "live-reload.js");
+    if (path.endsWith(".html")) {
+      if (hot) {
+        file = await injectScript(path, file, "hot-reload.js");
+      }
+    }
+
+    if (path.endsWith(".js")) {
+      const isRelative = path.startsWith(directory);
+      const isNodeModule = path.match(/(^|\/|\\)node_modules(\/|\\)/);
+      if (hot && !isNodeModule && !wasInjected && isRelative) {
+        const fileStr = file.toString();
+        log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
+        file = await injectHotImports(fileStr, path, directory);
+      }
     }
 
     log(LogLevel.VERBOSE, `Serving file: ${path}`);
@@ -74,8 +102,8 @@ function createRequestHandler(options) {
  * @return {Promise<Buffer>}
  */
 async function injectScript(htmlPath, file, relativeScriptPath) {
-  const scriptUrl = `@injected/${relativeScriptPath}`;
-  const script = `<script type="module" src="${scriptUrl}" />`;
+  const scriptUrl = `/@injected/${relativeScriptPath}`;
+  const script = `<script type="module" src="${scriptUrl}"></script>`;
   const fileString = file.toString();
   const newFileString = fileString.replace(/(\n?\t*<\/body>)/, `${script}$1`);
 

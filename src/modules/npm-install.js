@@ -5,9 +5,9 @@ import { buildEvents } from "../events.js";
 import { join } from "node:path";
 import { debounce } from "../utils/debounce.js";
 import { readFile } from "node:fs/promises";
-import { DEFAULT_BUILD_DIR } from "../constants.js";
 import { fileExists } from "../utils/file-exists.js";
 import BuildError from "../build-error.js";
+import { resolve } from "path";
 
 /** @import { BuildEventListener } from "../events.js"; */
 
@@ -16,7 +16,7 @@ import BuildError from "../build-error.js";
  */
 export class NpmInstall extends BuildModule {
   /** @type {string} */
-  directory = DEFAULT_BUILD_DIR;
+  directory;
 
   /** @type {string | null} */
   #packageJsonCache = null;
@@ -24,12 +24,12 @@ export class NpmInstall extends BuildModule {
   #packageLockJsonCache = null;
 
   /**
-   * @param {Object} [options]
-   * @param {string} [options.directory]
+   * @param {Object} options
+   * @param {string} options.directory
    */
   constructor(options) {
     super();
-    this.directory = options?.directory ?? this.directory;
+    this.directory = options.directory;
   }
 
   async run() {
@@ -74,7 +74,7 @@ export class NpmInstall extends BuildModule {
         throw new Error(`Got non-zero exit code ${exitCode}`);
       }
 
-      buildEvents.liveReload.publish();
+      buildEvents.hotReload.publish("node_modules/");
     } catch (error) {
       throw new Error(`Failed to install dependencies`);
     }
@@ -83,7 +83,9 @@ export class NpmInstall extends BuildModule {
   async watch() {
     const debouncedRun = debounce(async () => this.run(), 100);
 
-    /** @type {BuildEventListener<string>} */
+    const absoluteDirectory = resolve(this.directory);
+
+    /** @type {BuildEventListener<{ absolute: string, relative: string }>} */
     const handler = async (event) => {
       /**
        * @param {string} filename
@@ -91,11 +93,11 @@ export class NpmInstall extends BuildModule {
        * @return {Promise<void>}
        */
       const checkAgainstFile = async (filename, cache) => {
-        const fullPath = join(this.directory, filename);
+        const absoluteFile = join(absoluteDirectory, filename);
 
-        if (fullPath === event.data) {
-          if (await fileExists(fullPath)) {
-            const fileData = await readFile(fullPath, "utf-8");
+        if (absoluteFile === event.data.absolute) {
+          if (await fileExists(absoluteFile)) {
+            const fileData = await readFile(absoluteFile, "utf-8");
             if (fileData === cache) return;
           }
 

@@ -7,18 +7,16 @@ import { log, LogLevel } from "../utils/logging.js";
 import { buildEvents } from "../events.js";
 
 /**
+ * @param {Server} httpServer
  * @param {ServeOptions} options
- * @param {Server} [httpServer]
  * @return {WebSocketServer}
  */
-export function createWebSocketServer(options, httpServer) {
-  const { port, address } = options;
-
-  const wsOptions = httpServer ? { server: httpServer } : { port, host: address };
-
-  const wsServer = new WebSocketServer(wsOptions);
+export function attachWebSocketServer(httpServer, options) {
+  const wsServer = new WebSocketServer({ server: httpServer });
 
   wsServer.on("connection", createConnectionHandler(options));
+
+  log(LogLevel.VERBOSE, "Attached WebSocket server to HTTP server");
 
   return wsServer;
 }
@@ -35,12 +33,12 @@ function createConnectionHandler(options) {
     log(LogLevel.VERBOSE, "WebSocket connection opened");
 
     /** @type {() => void} */
-    let unsubscribeLiveReload;
+    let unsubscribeHotReload;
 
-    if (options.live) {
-      unsubscribeLiveReload = buildEvents.liveReload.subscribe(async () => {
-        log(LogLevel.VERBOSE, "Sending live reload message to client");
-        socket.send("live reload");
+    if (options.hot) {
+      unsubscribeHotReload = buildEvents.hotReload.subscribe(async (event) => {
+        log(LogLevel.VERBOSE, `Sending hot reload message with path "${event.data}" to client`);
+        socket.send(`hot reload: ${event.data}`);
       });
     }
 
@@ -51,7 +49,7 @@ function createConnectionHandler(options) {
     socket.on("close", () => {
       log(LogLevel.VERBOSE, "WebSocket connection closed");
 
-      unsubscribeLiveReload?.();
+      unsubscribeHotReload?.();
     });
 
     socket.on("message", (message) => {

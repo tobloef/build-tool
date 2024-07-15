@@ -1,7 +1,8 @@
 import { join } from "node:path";
 
 export const presets = {
-  web: join(import.meta.dirname, "web.js"),
+  "preset/dev": join(import.meta.dirname, "dev.js"),
+  "preset/github-pages": join(import.meta.dirname, "github-pages.js"),
 };
 
 /**

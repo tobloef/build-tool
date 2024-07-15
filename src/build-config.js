@@ -4,34 +4,29 @@ import { isPreset, presets } from "./presets/index.js";
 import { fileExists } from "./utils/file-exists.js";
 import { join } from "node:path";
 import { pathToFileURL } from "url";
-import { DEFAULT_BUILD_DIR } from "./constants.js";
 
 export class BuildConfig {
   /** @type {boolean} */
-  clean = false;
-  /** @type {boolean} */
-  watch = false;
-  /** @type {ServeOptions | null} */
-  serve = null;
+  watch;
+  /** @type {ServeOptions | false} */
+  serve;
   /** @type {string[]} */
-  ignored_folders = ["node_modules", ".git"];
+  ignoredFolders;
   /** @type {BuildModule[]} */
-  pipeline = [];
+  pipeline;
 
   /**
    *  @param {Object} options
-   *  @param {BuildModule[]} options.pipeline
-   *  @param {boolean} [options.clean]
+   *  @param {BuildModule[]} [options.pipeline]
    *  @param {boolean} [options.watch]
    *  @param {ServeOptions} [options.serve]
-   *
-   *  @param {string[]} [options.ignored_folders]
+   *  @param {string[]} [options.ignoredFolders]
    */
   constructor(options) {
-    this.pipeline = options.pipeline ?? this.pipeline;
-    this.watch = options.watch ?? this.watch;
-    this.serve = options.serve ?? this.serve;
-    this.ignored_folders = options.ignored_folders ?? this.ignored_folders;
+    this.pipeline = options.pipeline ?? [];
+    this.watch = options.watch ?? false;
+    this.serve = options.serve ?? false;
+    this.ignoredFolders = options.ignoredFolders ?? ["node_modules", ".git"];
   }
 }
 
@@ -77,23 +72,62 @@ async function getBuildConfigPath() {
     "No build config found. You must either:" +
     "\n  * Have a build-config.js (or .mjs) file in the working directory" +
     "\n  * Specify a path to a build config as the first argument" +
-    `\n  * Specify a preset as the first argument (available presets: ${Object.keys(presets).join(",")})`,
+    `\n  * Specify a preset as the first argument (available presets: ${Object.keys(presets).join(", ")})`,
   );
   process.exit(1);
 }
 
-/**
- * @typedef {Object} ServeOptions
- * @property {number} port
- * @property {string} address
- * @property {string} directory
- * @property {boolean} [live]
- * @property {boolean} [hot]
- */
+export class HotConfig {
+  /** @type {boolean} */
+  enabled;
 
-/** @type {ServeOptions} */
-export const DEFAULT_SERVE_OPTIONS = {
-  port: 8080,
-  address: "localhost",
-  directory: DEFAULT_BUILD_DIR,
-};
+  /** @type {RegExp[]} */
+  patterns;
+
+  /**
+   * @param {Object} [options]
+   * @param {boolean} [options.enabled]
+   * @param {RegExp[]} [options.patterns]
+   */
+  constructor(options) {
+    this.enabled = options?.enabled ?? true;
+    this.patterns = options?.patterns ?? [/\.js$/];
+  }
+}
+
+export class ServeOptions {
+  /** @type {number} */
+  port;
+  /** @type {string} */
+  address;
+  /** @type {string} */
+  directory;
+  /** @type {HotConfig} */
+  hot;
+  /** @type {boolean} */
+  open;
+
+  /**
+   * @param {Object} [options]
+   * @param {number} [options.port]
+   * @param {string} [options.address]
+   * @param {string} [options.directory]
+   * @param {boolean | HotConfig} [options.hot]
+   * @param {boolean} [options.open]
+   */
+  constructor(options) {
+    this.port = options?.port ?? 3007;
+    this.address = options?.address ?? "localhost";
+    this.directory = options?.directory ?? ".";
+    this.open = options?.open ?? false;
+
+    if (options?.hot === true) {
+      this.hot = new HotConfig();
+    } else if (options?.hot === false) {
+      this.hot = new HotConfig({ enabled: false });
+    } else {
+      this.hot = options?.hot ?? new HotConfig();
+    }
+  }
+}
+

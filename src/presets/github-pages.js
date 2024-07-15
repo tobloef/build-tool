@@ -1,9 +1,14 @@
 import { BuildConfig } from "../build-config.js";
 import { Copy, NpmInstall } from "../modules/index.js";
 
-const web = new BuildConfig({
+const SOURCE_DIRECTORY = "src";
+const BUILD_DIRECTORY = "docs";
+
+const githubPages = new BuildConfig({
   pipeline: [
     new Copy({
+      from: SOURCE_DIRECTORY,
+      to: BUILD_DIRECTORY,
       files: [
         /.+.js$/,
         /.+.html$/,
@@ -11,14 +16,17 @@ const web = new BuildConfig({
     }),
     new Copy({
       from: ".",
+      to: BUILD_DIRECTORY,
       recursive: false,
       files: [
         /package.json/,
         /package-lock.json/,
       ],
     }),
-    new NpmInstall(),
+    new NpmInstall({
+      directory: BUILD_DIRECTORY,
+    }),
   ],
 });
 
-export default web;
+export default githubPages;

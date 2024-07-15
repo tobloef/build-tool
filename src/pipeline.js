@@ -1,7 +1,10 @@
 import { log, LogLevel } from "./utils/logging.js";
-import { watch } from "fs/promises";
+import { watch } from "fs";
 import { buildEvents } from "./events.js";
 import { debounce } from "./utils/debounce.js";
+import { resolve } from "path";
+import { lstat } from "node:fs/promises";
+import { normalizeSlashes } from "./utils/paths.js";
 
 /** @import { BuildConfig } from "./build-config.js"; */
 
@@ -31,6 +34,7 @@ export async function runPipelineOnce(buildConfig) {
 export async function runPipelineContinuously(buildConfig) {
   log(LogLevel.INFO, "👀 Watching files for changes...");
 
+  setupReloadEvents(buildConfig);
   void watchFiles(buildConfig);
 
   for (const module of buildConfig.pipeline) {
@@ -45,28 +49,84 @@ export async function runPipelineContinuously(buildConfig) {
 async function watchFiles(buildConfig) {
   let perPathDebouncedHandlers = new Map();
 
-  for await (const event of watch(".", { recursive: true })) {
-    const { filename } = event;
-
+  watch(".", { recursive: true }, async (eventType, filename) => {
     if (filename === null) {
-      continue;
+      return;
     }
 
     if (filename.endsWith("~")) {
-      continue;
+      return;
     }
 
-    if (buildConfig.ignored_folders.some((folder) => filename.includes(folder))) {
-      continue;
+    const absolutePath = resolve(filename);
+
+    const absoluteIgnoredFolders = buildConfig.ignoredFolders.map((folder) => resolve(folder));
+
+    if (absoluteIgnoredFolders.some((folder) => absolutePath.startsWith(folder))) {
+      return;
     }
 
-    if (!perPathDebouncedHandlers.has(filename)) {
+    let isFolder = false;
+    try {
+      isFolder = (await lstat(absolutePath)).isDirectory();
+    } catch (error) {
+      // This check wasn't that important, let's just move on
+      log(LogLevel.WARNING, `Failed to check if "${absolutePath}" was a folder: ${error.message}`);
+    }
+
+    if (isFolder) {
+      return;
+    }
+
+    if (!perPathDebouncedHandlers.has(absolutePath)) {
       perPathDebouncedHandlers.set(
-        filename,
-        debounce(() => buildEvents.fileChanged.publish(filename), 10),
+        absolutePath,
+        debounce(() => buildEvents.fileChanged.publish({
+          absolute: absolutePath,
+          relative: filename,
+        }), 10),
       );
     }
 
-    perPathDebouncedHandlers.get(filename)();
+    perPathDebouncedHandlers.get(absolutePath)();
+  });
+}
+
+/**
+ * @param {BuildConfig} buildConfig
+ * @return {void}
+ */
+function setupReloadEvents(buildConfig) {
+  if (!buildConfig.serve) {
+    return;
   }
+
+  let absoluteBuildPath = normalizeSlashes(resolve(buildConfig.serve.directory));
+  if (!absoluteBuildPath.endsWith("/")) {
+    absoluteBuildPath += "/";
+  }
+
+  buildEvents.fileChanged.subscribe(async (event) => {
+    log(LogLevel.VERBOSE, `File changed: ${event.data.relative} (${event.data.absolute})`);
+
+    if (!buildConfig.serve) {
+      return;
+    }
+
+    if (!event.data.absolute.startsWith(absoluteBuildPath)) {
+      return;
+    }
+
+    const rootUrl = `http://${buildConfig.serve.address}:${buildConfig.serve.port}`;
+    const path = event.data.absolute.slice(absoluteBuildPath.length);
+    const canonicalPath = `${rootUrl}/${path}`;
+
+    let hotPatterns = buildConfig.serve ? buildConfig.serve.hot.patterns : [];
+
+    if (!hotPatterns.some((pattern) => pattern.test(canonicalPath))) {
+      return;
+    }
+
+    buildEvents.hotReload.publish(canonicalPath);
+  });
 }
