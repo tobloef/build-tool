@@ -14,7 +14,7 @@ socket.addEventListener("open", () => {
 /**
  * @param {MessageEvent} event
  */
-function handleMessage(event) {
+async function handleMessage(event) {
   const prefix = "hot reload: ";
 
   if (!event.data.startsWith(prefix)) {
@@ -23,9 +23,13 @@ function handleMessage(event) {
 
   const canonicalPath = event.data.slice(prefix.length);
 
-  const wasAccepted = hotReload.reload(canonicalPath);
+  const wasAccepted = await hotReload.reload(canonicalPath);
 
   if (!wasAccepted) {
+    console.debug(`Hot reload for "${canonicalPath}" was not accepted, reloading the page`);
     window.location.reload();
+    return;
   }
+
+  console.debug(`Hot reload for "${canonicalPath}" was accepted`);
 }
