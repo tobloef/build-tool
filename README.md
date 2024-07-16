@@ -17,9 +17,14 @@
 * Extensible module system ([list of built-in modules]()).
 * Build once or continuously watch for changes.
 * Support for both live reloading (refresh page) and hot reloading (swap changed assets out on the fly).
+* Generate import maps for your dependencies (useful to load from `node_modules` for example).
 
 ## Usage
 
 ```
 // TODO
 ```
+
+## Limitations
+
+* `require` is not supported, which can be problematic for certain dependencies.
