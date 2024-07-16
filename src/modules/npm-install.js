@@ -20,11 +20,6 @@ export class NpmInstall extends BuildModule {
   /** @type {string} */
   to;
 
-  /** @type {string | null} */
-  #packageJsonCache = null;
-  /** @type {string | null} */
-  #packageLockJsonCache = null;
-
   /**
    * @param {Object} options
    * @param {string} options.from
@@ -49,12 +44,6 @@ export class NpmInstall extends BuildModule {
     if (!await fileExists(packageLockJsonPath)) {
       throw new BuildError(`No package-lock.json found in "${this.from}"`);
     }
-
-    const packageJson = await readFile(packageJsonPath, "utf-8");
-    const packageLockJson = await readFile(packageLockJsonPath, "utf-8");
-
-    this.#packageJsonCache = packageJson;
-    this.#packageLockJsonCache = packageLockJson;
 
     const command = `npm install --omit=dev --install-links --prefix ${this.to}`;
     log(LogLevel.VERBOSE, `Executing "${command}"`);
@@ -93,34 +82,29 @@ export class NpmInstall extends BuildModule {
     const handler = async (event) => {
       /**
        * @param {string} filename
-       * @param {string | null} cache
        * @return {Promise<void>}
        */
-      const checkAgainstFile = async (filename, cache) => {
+      const checkAgainstFile = async (filename) => {
         const absoluteFile = join(absoluteDirectory, filename);
 
-        if (absoluteFile === event.data.absolute) {
-          if (await fileExists(absoluteFile)) {
-            const fileData = await readFile(absoluteFile, "utf-8");
-            if (fileData === cache) return;
-          }
+        if (absoluteFile !== event.data.absolute) {
+          return;
+        }
 
-          log(LogLevel.VERBOSE, `File "${filename}" changed, running npm install`);
-
-          try {
-            await debouncedRun();
-          } catch (error) {
-            if (error instanceof BuildError) {
-              log(LogLevel.ERROR, `${error.message}. Skipping npm install until the issue is resolved.`);
-            } else {
-              throw error;
-            }
+        log(LogLevel.VERBOSE, `File "${filename}" changed, running npm install`);
+        try {
+          await debouncedRun();
+        } catch (error) {
+          if (error instanceof BuildError) {
+            log(LogLevel.ERROR, `${error.message}. Skipping npm install until the issue is resolved.`);
+          } else {
+            throw error;
           }
         }
       };
 
-      await checkAgainstFile("package.json", this.#packageJsonCache);
-      await checkAgainstFile("package-lock.json", this.#packageLockJsonCache);
+      await checkAgainstFile("package.json");
+      await checkAgainstFile("package-lock.json");
     };
 
     buildEvents.fileChanged.subscribe(handler);
