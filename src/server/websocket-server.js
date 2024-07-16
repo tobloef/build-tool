@@ -35,7 +35,7 @@ function createConnectionHandler(options) {
     /** @type {() => void} */
     let unsubscribeHotReload;
 
-    if (options.hot) {
+    if (options.hot.enabled) {
       unsubscribeHotReload = buildEvents.hotReload.subscribe(async (event) => {
         log(LogLevel.VERBOSE, `Sending hot reload message with path "${event.data}" to client`);
         socket.send(`hot reload: ${event.data}`);

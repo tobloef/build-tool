@@ -5,14 +5,15 @@ import { clearTimeout } from "node:timers";
  * @param {function} func The function to debounce.
  * @param {number} wait The number of milliseconds to wait before calling the function.
  * @param {number} [maxWait] The maximum number of milliseconds to wait before calling the function.
- * @return {function} The debounced function.
+ * @return {T} The debounced function.
  */
 export function debounce(func, wait, maxWait) {
-  if (func.constructor.name === "AsyncFunction") {
-    return debounceAsync(func, wait, maxWait);
-  } else {
-    return debounceSync(func, wait, maxWait);
-  }
+  /** @type any **/
+  const debounced = func.constructor.name === "AsyncFunction"
+    ? debounceAsync(func, wait, maxWait)
+    : debounceSync(func, wait, maxWait);
+
+  return debounced;
 }
 
 /**

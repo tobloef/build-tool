@@ -16,45 +16,38 @@ import { resolve } from "path";
  */
 export class NpmInstall extends BuildModule {
   /** @type {string} */
-  directory;
-
-  /** @type {string | null} */
-  #packageJsonCache = null;
-  /** @type {string | null} */
-  #packageLockJsonCache = null;
+  from;
+  /** @type {string} */
+  to;
 
   /**
    * @param {Object} options
-   * @param {string} options.directory
+   * @param {string} options.from
+   * @param {string} options.to
    */
   constructor(options) {
     super();
-    this.directory = options.directory;
+    this.from = options.from;
+    this.to = options.to;
   }
 
   async run() {
-    log(LogLevel.INFO, `📦 Installing npm dependencies in "${this.directory}"`);
+    log(LogLevel.INFO, `📦 Installing npm dependencies from "${this.from}" to "${this.to}"`);
 
-    const packageJsonPath = join(this.directory, "package.json");
-    const packageLockJsonPath = join(this.directory, "package-lock.json");
+    const packageJsonPath = join(this.from, "package.json");
+    const packageLockJsonPath = join(this.from, "package-lock.json");
 
     if (!await fileExists(packageJsonPath)) {
-      throw new BuildError(`No package.json found in "${this.directory}"`);
+      throw new BuildError(`No package.json found in "${this.from}"`);
     }
 
     if (!await fileExists(packageLockJsonPath)) {
-      throw new BuildError(`No package-lock.json found in "${this.directory}"`);
+      throw new BuildError(`No package-lock.json found in "${this.from}"`);
     }
 
-    const packageJson = await readFile(packageJsonPath, "utf-8");
-    const packageLockJson = await readFile(packageLockJsonPath, "utf-8");
-
-    this.#packageJsonCache = packageJson;
-    this.#packageLockJsonCache = packageLockJson;
-
-    const command = `npm install --omit=dev`;
-    log(LogLevel.VERBOSE, `Executing "${command}" in ${this.directory}`);
-    const childProcess = await exec(command, { cwd: this.directory });
+    const command = `npm install --omit=dev --install-links --prefix ${this.to}`;
+    log(LogLevel.VERBOSE, `Executing "${command}"`);
+    const childProcess = exec(command);
 
     childProcess.stdout?.on("data", (data) => {
       log(LogLevel.VERBOSE, data);
@@ -83,40 +76,35 @@ export class NpmInstall extends BuildModule {
   async watch() {
     const debouncedRun = debounce(async () => this.run(), 100);
 
-    const absoluteDirectory = resolve(this.directory);
+    const absoluteDirectory = resolve(this.from);
 
     /** @type {BuildEventListener<{ absolute: string, relative: string }>} */
     const handler = async (event) => {
       /**
        * @param {string} filename
-       * @param {string | null} cache
        * @return {Promise<void>}
        */
-      const checkAgainstFile = async (filename, cache) => {
+      const checkAgainstFile = async (filename) => {
         const absoluteFile = join(absoluteDirectory, filename);
 
-        if (absoluteFile === event.data.absolute) {
-          if (await fileExists(absoluteFile)) {
-            const fileData = await readFile(absoluteFile, "utf-8");
-            if (fileData === cache) return;
-          }
+        if (absoluteFile !== event.data.absolute) {
+          return;
+        }
 
-          log(LogLevel.VERBOSE, `File "${filename}" changed, running npm install`);
-
-          try {
-            await debouncedRun();
-          } catch (error) {
-            if (error instanceof BuildError) {
-              log(LogLevel.ERROR, `${error.message}. Skipping npm install until the issue is resolved.`);
-            } else {
-              throw error;
-            }
+        log(LogLevel.VERBOSE, `File "${filename}" changed, running npm install`);
+        try {
+          await debouncedRun();
+        } catch (error) {
+          if (error instanceof BuildError) {
+            log(LogLevel.ERROR, `${error.message}. Skipping npm install until the issue is resolved.`);
+          } else {
+            throw error;
           }
         }
       };
 
-      await checkAgainstFile("package.json", this.#packageJsonCache);
-      await checkAgainstFile("package-lock.json", this.#packageLockJsonCache);
+      await checkAgainstFile("package.json");
+      await checkAgainstFile("package-lock.json");
     };
 
     buildEvents.fileChanged.subscribe(handler);

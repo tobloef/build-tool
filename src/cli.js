@@ -75,7 +75,7 @@ async function startServer(server, serveOptions) {
 
       log(LogLevel.INFO, `🌐 Dev server running at ${url}`);
 
-      if (serveOptions.hot) {
+      if (serveOptions.hot.enabled) {
         log(LogLevel.INFO, "🔥 Hot reloading enabled");
       }
 

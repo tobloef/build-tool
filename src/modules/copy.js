@@ -16,7 +16,9 @@ export class Copy extends BuildModule {
   /** @type {string} */
   to;
   /** @type {RegExp[] | null} */
-  files;
+  include;
+  /** @type {RegExp[] | null} */
+  exclude;
   /** @type {boolean} */
   recursive;
 
@@ -25,22 +27,30 @@ export class Copy extends BuildModule {
    * @param {Object} options
    * @param {string} options.from
    * @param {string} options.to
-   * @param {RegExp[]} [options.files]
+   * @param {RegExp[]} [options.include]
+   * @param {RegExp[]} [options.exclude]
    * @param {boolean} [options.recursive]
    */
   constructor(options) {
     super();
     this.from = options.from;
     this.to = options.to;
-    this.files = options.files ?? null;
+    this.include = options.include ?? null;
+    this.exclude = options.exclude ?? null;
     this.recursive = options.recursive ?? true;
   }
 
   async run() {
     let logMessage = `📄 Copying files from "${this.from}" to "${this.to}"`;
-    if (this.files) {
-      logMessage += `, matching ${this.files.map((regex) => `"${regex.source}"`).join(", ")}`;
+
+    if (this.include) {
+      logMessage += `, including ${this.include.map((regex) => `"${regex.source}"`).join(", ")}`;
     }
+
+    if (this.exclude) {
+      logMessage += `, excluding ${this.exclude.map((regex) => `"${regex.source}"`).join(", ")}`;
+    }
+
     log(LogLevel.INFO, logMessage);
 
     const files = await readdir(
@@ -55,13 +65,23 @@ export class Copy extends BuildModule {
 
       const relativePath = join(file.parentPath, file.name);
 
+      if (relativePath.startsWith(this.to) && this.from !== this.to) {
+        continue;
+      }
+
       await this.#copyIfMatch(relativePath);
     }
   }
 
   async watch() {
     buildEvents.fileChanged.subscribe(async (event) => {
-      if (!event.data.relative.startsWith(this.from)) {
+      const startsWithFrom = event.data.relative.startsWith(this.from);
+
+      const fromIsWorkingDirectory = this.from === "." || this.from === "./";
+      const isInFromFolder = fromIsWorkingDirectory || startsWithFrom;
+      const isInToFolder = event.data.relative.startsWith(this.to);
+
+      if (!isInFromFolder || (isInToFolder && this.from !== this.to)) {
         return;
       }
 
@@ -77,9 +97,11 @@ export class Copy extends BuildModule {
     const absolutePath = resolve(relativePath);
     const absoluteFrom = resolve(this.from);
     const relativeToFrom = absolutePath.replace(absoluteFrom, "");
-    const matchesRegex = this.files?.some((regex) => regex.test(relativeToFrom)) ?? true;
 
-    if (!matchesRegex) {
+    const matchesInclude = this.include?.some((regex) => regex.test(relativeToFrom)) ?? true;
+    const matchesExclude = this.exclude?.some((regex) => regex.test(relativeToFrom)) ?? false;
+
+    if (!matchesInclude || matchesExclude) {
       return;
     }
 

@@ -1,7 +1,7 @@
 import { BuildConfig } from "../build-config.js";
 import { Copy, NpmInstall } from "../modules/index.js";
 
-const SOURCE_DIRECTORY = "src";
+const SOURCE_DIRECTORY = ".";
 const BUILD_DIRECTORY = "docs";
 
 const githubPages = new BuildConfig({
@@ -9,22 +9,17 @@ const githubPages = new BuildConfig({
     new Copy({
       from: SOURCE_DIRECTORY,
       to: BUILD_DIRECTORY,
-      files: [
+      include: [
         /.+.js$/,
         /.+.html$/,
       ],
-    }),
-    new Copy({
-      from: ".",
-      to: BUILD_DIRECTORY,
-      recursive: false,
-      files: [
-        /package.json/,
-        /package-lock.json/,
-      ],
+      exclude: [
+        /node_modules/,
+      ]
     }),
     new NpmInstall({
-      directory: BUILD_DIRECTORY,
+      from: SOURCE_DIRECTORY,
+      to: BUILD_DIRECTORY,
     }),
   ],
 });
