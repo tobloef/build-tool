@@ -72,7 +72,7 @@ function createRequestHandler(options) {
     let file = await readFile(path);
 
     if (path.endsWith(".html")) {
-      if (hot) {
+      if (hot.enabled) {
         file = await injectScript(path, file, "hot-reload.js");
       }
     }
@@ -80,7 +80,7 @@ function createRequestHandler(options) {
     if (path.endsWith(".js")) {
       const isRelative = path.startsWith(directory);
       const isNodeModule = path.match(/(^|\/|\\)node_modules(\/|\\)/);
-      if (hot && !isNodeModule && !wasInjected && isRelative) {
+      if (hot.enabled && !isNodeModule && !wasInjected && isRelative) {
         const fileStr = file.toString();
         log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
         file = await injectHotImports(fileStr, path, directory);

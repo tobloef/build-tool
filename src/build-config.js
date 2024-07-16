@@ -19,13 +19,13 @@ export class BuildConfig {
    *  @param {Object} options
    *  @param {BuildModule[]} [options.pipeline]
    *  @param {boolean} [options.watch]
-   *  @param {ServeOptions} [options.serve]
+   *  @param {boolean | ServeOptions} [options.serve]
    *  @param {string[]} [options.ignoredFolders]
    */
   constructor(options) {
     this.pipeline = options.pipeline ?? [];
     this.watch = options.watch ?? false;
-    this.serve = options.serve ?? false;
+    this.serve = options.serve === true ? new ServeOptions() : options.serve ?? false;
     this.ignoredFolders = options.ignoredFolders ?? ["node_modules", ".git"];
   }
 }
@@ -126,7 +126,9 @@ export class ServeOptions {
     } else if (options?.hot === false) {
       this.hot = new HotConfig({ enabled: false });
     } else {
-      this.hot = options?.hot ?? new HotConfig();
+      this.hot = options?.hot ?? new HotConfig({
+        enabled: false
+      });
     }
   }
 }
