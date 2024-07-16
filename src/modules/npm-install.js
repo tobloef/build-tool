@@ -16,7 +16,9 @@ import { resolve } from "path";
  */
 export class NpmInstall extends BuildModule {
   /** @type {string} */
-  directory;
+  from;
+  /** @type {string} */
+  to;
 
   /** @type {string | null} */
   #packageJsonCache = null;
@@ -25,25 +27,27 @@ export class NpmInstall extends BuildModule {
 
   /**
    * @param {Object} options
-   * @param {string} options.directory
+   * @param {string} options.from
+   * @param {string} options.to
    */
   constructor(options) {
     super();
-    this.directory = options.directory;
+    this.from = options.from;
+    this.to = options.to;
   }
 
   async run() {
-    log(LogLevel.INFO, `📦 Installing npm dependencies in "${this.directory}"`);
+    log(LogLevel.INFO, `📦 Installing npm dependencies from "${this.from}" to "${this.to}"`);
 
-    const packageJsonPath = join(this.directory, "package.json");
-    const packageLockJsonPath = join(this.directory, "package-lock.json");
+    const packageJsonPath = join(this.from, "package.json");
+    const packageLockJsonPath = join(this.from, "package-lock.json");
 
     if (!await fileExists(packageJsonPath)) {
-      throw new BuildError(`No package.json found in "${this.directory}"`);
+      throw new BuildError(`No package.json found in "${this.from}"`);
     }
 
     if (!await fileExists(packageLockJsonPath)) {
-      throw new BuildError(`No package-lock.json found in "${this.directory}"`);
+      throw new BuildError(`No package-lock.json found in "${this.from}"`);
     }
 
     const packageJson = await readFile(packageJsonPath, "utf-8");
@@ -52,9 +56,9 @@ export class NpmInstall extends BuildModule {
     this.#packageJsonCache = packageJson;
     this.#packageLockJsonCache = packageLockJson;
 
-    const command = `npm install --omit=dev`;
-    log(LogLevel.VERBOSE, `Executing "${command}" in ${this.directory}`);
-    const childProcess = await exec(command, { cwd: this.directory });
+    const command = `npm install --omit=dev --install-links --prefix ${this.to}`;
+    log(LogLevel.VERBOSE, `Executing "${command}"`);
+    const childProcess = exec(command);
 
     childProcess.stdout?.on("data", (data) => {
       log(LogLevel.VERBOSE, data);
@@ -83,7 +87,7 @@ export class NpmInstall extends BuildModule {
   async watch() {
     const debouncedRun = debounce(async () => this.run(), 100);
 
-    const absoluteDirectory = resolve(this.directory);
+    const absoluteDirectory = resolve(this.from);
 
     /** @type {BuildEventListener<{ absolute: string, relative: string }>} */
     const handler = async (event) => {
