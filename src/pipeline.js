@@ -1,10 +1,12 @@
-import { log, LogLevel } from "./utils/logging.js";
+import {
+  log,
+  LogLevel,
+} from "./utils/logging.js";
 import { watch } from "fs";
 import { buildEvents } from "./events.js";
 import { debounce } from "./utils/debounce.js";
-import { resolve } from "path";
 import { lstat } from "node:fs/promises";
-import { normalizeSlashes } from "./utils/paths.js";
+import { getAbsolutePath } from "./utils/get-absolute-path.js";
 
 /** @import { BuildConfig } from "./build-config.js"; */
 
@@ -17,8 +19,8 @@ export async function runPipelineOnce(buildConfig) {
 
   const startTime = performance.now();
 
-  for (const module of buildConfig.pipeline) {
-    await module.run();
+  for (const module of buildConfig.modules) {
+    await module.onBuild({ buildConfig });
   }
 
   const endTime = performance.now();
@@ -34,19 +36,17 @@ export async function runPipelineOnce(buildConfig) {
 export async function runPipelineContinuously(buildConfig) {
   log(LogLevel.INFO, "👀 Watching files for changes...");
 
-  setupReloadEvents(buildConfig);
-  void watchFiles(buildConfig);
-
-  for (const module of buildConfig.pipeline) {
-    await module.watch();
+  for (const module of buildConfig.modules) {
+    await module.onWatch({ buildConfig });
   }
+
+  watchFiles(buildConfig);
 }
 
 /**
  * @param {BuildConfig} buildConfig
- * @return {Promise<void>}
  */
-async function watchFiles(buildConfig) {
+function watchFiles(buildConfig) {
   let perPathDebouncedHandlers = new Map();
 
   watch(".", { recursive: true }, async (eventType, filename) => {
@@ -58,9 +58,9 @@ async function watchFiles(buildConfig) {
       return;
     }
 
-    const absolutePath = resolve(filename);
+    const absolutePath = getAbsolutePath(filename);
 
-    const absoluteIgnoredFolders = buildConfig.ignoredFolders.map((folder) => resolve(folder));
+    const absoluteIgnoredFolders = buildConfig.ignoredFolders.map((folder) => getAbsolutePath(folder, { isFolder: true }));
 
     if (absoluteIgnoredFolders.some((folder) => absolutePath.startsWith(folder))) {
       return;
@@ -81,10 +81,13 @@ async function watchFiles(buildConfig) {
     if (!perPathDebouncedHandlers.has(absolutePath)) {
       perPathDebouncedHandlers.set(
         absolutePath,
-        debounce(() => buildEvents.fileChanged.publish({
-          absolute: absolutePath,
-          relative: filename,
-        }), 10),
+        debounce(() => {
+          log(LogLevel.VERBOSE, `File changed: ${filename} (${eventType})`);
+          buildEvents.fileChanged.publish({
+            absolute: absolutePath,
+            relative: filename,
+          });
+        }, 10),
       );
     }
 
@@ -92,41 +95,4 @@ async function watchFiles(buildConfig) {
   });
 }
 
-/**
- * @param {BuildConfig} buildConfig
- * @return {void}
- */
-function setupReloadEvents(buildConfig) {
-  if (!buildConfig.serve) {
-    return;
-  }
 
-  let absoluteBuildPath = normalizeSlashes(resolve(buildConfig.serve.directory));
-  if (!absoluteBuildPath.endsWith("/")) {
-    absoluteBuildPath += "/";
-  }
-
-  buildEvents.fileChanged.subscribe(async (event) => {
-    log(LogLevel.VERBOSE, `File changed: ${event.data.relative} (${event.data.absolute})`);
-
-    if (!buildConfig.serve) {
-      return;
-    }
-
-    if (!event.data.absolute.startsWith(absoluteBuildPath)) {
-      return;
-    }
-
-    const rootUrl = `http://${buildConfig.serve.address}:${buildConfig.serve.port}`;
-    const path = event.data.absolute.slice(absoluteBuildPath.length);
-    const canonicalPath = `${rootUrl}/${path}`;
-
-    let hotPatterns = buildConfig.serve ? buildConfig.serve.hot.patterns : [];
-
-    if (!hotPatterns.some((pattern) => pattern.test(canonicalPath))) {
-      return;
-    }
-
-    buildEvents.hotReload.publish(canonicalPath);
-  });
-}

@@ -1,113 +1,87 @@
 import { createServer } from "node:http";
-import { log, LogLevel } from "../utils/logging.js";
-import { fileExists } from "../utils/file-exists.js";
-import { readFile } from "node:fs/promises";
-import { getMimeType } from "../utils/get-mime-type.js";
-import { join } from "node:path";
-import { normalizeSlashes } from "../utils/paths.js";
-import { injectHotImports } from "@tobloef/hot-reload";
+import { ContentType } from "../utils/content-type.js";
+import {
+  log,
+  LogLevel,
+} from "../utils/logging.js";
 
 /** @import { IncomingMessage, ServerResponse, Server } from "node:http"; */
+/** @import { BuildConfig, ServeOptions } from "../build-config.js"; */
 
-/** @import { ServeOptions } from "../build-config.js"; */
+/** @typedef {{ content: Buffer, type: ContentType }} ResponseData */
 
 /**
- * @param {ServeOptions} options
+ * @param {BuildConfig} buildConfig
  * @return {Server}
  */
-export function createHttpServer(options) {
+export function createHttpServer(buildConfig) {
   const server = createServer();
 
-  server.on("request", createRequestHandler(options));
+  server.on("request", createRequestHandler(buildConfig));
 
   return server;
 }
 
 /**
- * @param {ServeOptions} options
+ * @param {BuildConfig} buildConfig
  * @return {(req: IncomingMessage, res: ServerResponse) => Promise<void>}
  */
-function createRequestHandler(options) {
+function createRequestHandler(buildConfig) {
   const {
-    hot,
-    directory: rawDirectory,
-    address,
-    port,
-  } = options;
-
-  const directory = normalizeSlashes(rawDirectory);
+    modules,
+  } = buildConfig;
 
   return async (req, res) => {
-    const url = new URL(req.url ?? "", `http://${address}:${port}`);
+    let originalUrl = req.url;
 
-    let path = url.pathname;
-
-    if (path === undefined || path === "/") {
-      path = "/index.html";
+    for (const module of modules) {
+      await module.onHttpRequest({ req, res, buildConfig });
     }
 
-    const filename = path?.split("/").pop();
-    if (!filename?.includes(".")) {
-      path += ".html";
+    let logMessage = `${req.method} "${req.url}"`;
+    if (originalUrl !== req.url) {
+      logMessage += ` (original: "${originalUrl}")`;
+    }
+    log(LogLevel.VERBOSE, logMessage);
+
+    /** @type {ResponseData | null} */
+    let data = null;
+
+    for (const module of modules) {
+      data = await module.onHttpResponse({ data, req, res, buildConfig });
     }
 
-    let wasInjected = false;
-    if (path.startsWith("/@injected/")) {
-      const injectedSourceDir = join(import.meta.dirname, "injected").replace(/\\/g, "/");
-      path = path.replace("/@injected/", `${injectedSourceDir}/`);
-      wasInjected = true;
-    } else {
-      path = `${directory}${path}`;
-    }
-
-    if (!await fileExists(path)) {
+    if (!data) {
       res.statusCode = 404;
-      res.setHeader("Content-Type", "text/plain");
       res.end("Not found");
-      log(LogLevel.ERROR, `File not found: ${path}`);
       return;
     }
 
-    /** @type {Buffer | string} */
-    let file = await readFile(path);
-
-    if (path.endsWith(".html")) {
-      if (hot.enabled) {
-        file = await injectScript(path, file, "hot-reload.js");
-      }
-    }
-
-    if (path.endsWith(".js")) {
-      const isRelative = path.startsWith(directory);
-      const isNodeModule = path.match(/(^|\/|\\)node_modules(\/|\\)/);
-      if (hot.enabled && !isNodeModule && !wasInjected && isRelative) {
-        const fileStr = file.toString();
-        log(LogLevel.VERBOSE, `Hot-proxying file: ${path}`);
-        file = await injectHotImports(fileStr, path, directory);
-      }
-    }
-
-    log(LogLevel.VERBOSE, `Serving file: ${path}`);
-
     res.statusCode = 200;
-    res.setHeader("Content-Type", getMimeType(path));
-    res.end(file);
+    res.setHeader("Content-Type", data.type);
+    res.end(data.content);
   };
 }
 
 /**
- * @param {string} htmlPath
- * @param {Buffer} file
- * @param {string} relativeScriptPath Relative to "injected" directory
- * @return {Promise<Buffer>}
+ * @param {Server} server
+ * @param {ServeOptions} serveOptions
  */
-async function injectScript(htmlPath, file, relativeScriptPath) {
-  const scriptUrl = `/@injected/${relativeScriptPath}`;
-  const script = `<script type="module" src="${scriptUrl}"></script>`;
-  const fileString = file.toString();
-  const newFileString = fileString.replace(/(\n?\t*<\/body>)/, `${script}$1`);
+export async function startServer(server, serveOptions) {
+  return new Promise((resolve) => {
+    const { port, address, open: shouldOpen } = serveOptions;
 
-  log(LogLevel.VERBOSE, `Injected script "${relativeScriptPath}" into "${htmlPath}"`);
+    server.listen(port, address, () => {
+      const url = `http://${address}:${port}/`;
 
-  return Buffer.from(newFileString);
+      log(LogLevel.INFO, `🌐 Dev server running at ${url}`);
+
+      if (shouldOpen) {
+        log(LogLevel.INFO, "🚀 Opening in browser");
+        open(url);
+      }
+
+      resolve(undefined);
+    });
+  });
 }
