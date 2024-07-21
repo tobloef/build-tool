@@ -12,12 +12,14 @@
     "url": "https://gjthub.com/tobloef/build-tool"
   },
   "main": "src/index.js",
+  "types": "types/index.d.ts",
   "bin": {
     "build-tool": "src/cli.js"
   },
   "type": "module",
   "scripts": {
-    "check": "tsc --project jsconfig.json"
+    "check": "tsc --project jsconfig.json",
+    "generate-types": "tsc --emitDeclarationOnly --project tsconfig.types.json"
   },
   "dependencies": {
     "@tobloef/hot-reload": "^1.1.1",
