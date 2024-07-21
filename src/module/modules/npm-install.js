@@ -97,8 +97,6 @@ export class NpmInstall extends Module {
       if (exitCode !== 0) {
         throw new Error(`Got non-zero exit code ${exitCode}`);
       }
-
-      buildEvents.hotReload.publish("node_modules/");
     } catch (error) {
       log(LogLevel.ERROR, `Failed to install dependencies: ${error.message}`);
       throw new BuildError(`Failed to install dependencies`);
