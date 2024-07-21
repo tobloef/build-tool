@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import { log, LogLevel, setLogLevel } from "./utils/logging.js";
-import { getBuildConfig, HotConfig, ServeOptions } from "./build-config.js";
+import { getBuildConfig, ServeOptions } from "./build-config.js";
 import { inspect, parseArgs } from "node:util";
 import { runPipelineContinuously, runPipelineOnce } from "./pipeline.js";
-import { createHttpServer } from "./server/http-server.js";
+import { createHttpServer, startServer } from "./server/http-server.js";
 import { attachWebSocketServer } from "./server/websocket-server.js";
 import { open } from "./utils/open.js";
 
@@ -27,7 +27,6 @@ async function cli() {
   buildConfig.watch = args.watch ?? buildConfig.watch;
   buildConfig.serve = args.serve && !buildConfig.serve ? new ServeOptions() : buildConfig.serve;
   if (buildConfig.serve) {
-    buildConfig.serve.hot = args.hot ? new HotConfig() : buildConfig.serve.hot;
     buildConfig.serve.open = args.open ?? buildConfig.serve.open;
   }
 
@@ -36,8 +35,8 @@ async function cli() {
   await runPipelineOnce(buildConfig);
 
   if (buildConfig.serve) {
-    const server = createHttpServer(buildConfig.serve);
-    attachWebSocketServer(server, buildConfig.serve);
+    const server = createHttpServer(buildConfig);
+    attachWebSocketServer(server, buildConfig);
     await startServer(server, buildConfig.serve);
   }
 
@@ -53,40 +52,12 @@ function getArgs() {
       quiet: { type: "boolean" },
       watch: { type: "boolean" },
       serve: { type: "boolean" },
-      hot: { type: "boolean" },
       open: { type: "boolean" },
     },
     allowPositionals: true,
   });
 
   return args;
-}
-
-/**
- * @param {Server} server
- * @param {ServeOptions} serveOptions
- */
-async function startServer(server, serveOptions) {
-  return new Promise((resolve) => {
-    const { port, address } = serveOptions;
-
-    server.listen(port, address, () => {
-      const url = `http://${address}:${port}/`;
-
-      log(LogLevel.INFO, `🌐 Dev server running at ${url}`);
-
-      if (serveOptions.hot.enabled) {
-        log(LogLevel.INFO, "🔥 Hot reloading enabled");
-      }
-
-      if (serveOptions.open) {
-        log(LogLevel.INFO, "🚀 Opening in browser");
-        open(url);
-      }
-
-      resolve(undefined);
-    });
-  });
 }
 
 await cli();

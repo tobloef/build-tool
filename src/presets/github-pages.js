@@ -1,11 +1,11 @@
 import { BuildConfig } from "../build-config.js";
-import { Copy, NpmInstall } from "../modules/index.js";
+import { Copy, GenerateImportMap, NpmInstall } from "../module/index.js";
 
 const SOURCE_DIRECTORY = ".";
 const BUILD_DIRECTORY = "docs";
 
 const githubPages = new BuildConfig({
-  pipeline: [
+  modules: [
     new Copy({
       from: SOURCE_DIRECTORY,
       to: BUILD_DIRECTORY,
@@ -18,9 +18,12 @@ const githubPages = new BuildConfig({
       ]
     }),
     new NpmInstall({
-      from: SOURCE_DIRECTORY,
-      to: BUILD_DIRECTORY,
+      packagePath: SOURCE_DIRECTORY,
+      destinationPath: BUILD_DIRECTORY,
     }),
+    new GenerateImportMap({
+      outputPath: BUILD_DIRECTORY
+    })
   ],
 });
 

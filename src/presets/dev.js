@@ -1,11 +1,16 @@
-import { BuildConfig, ServeOptions } from "../build-config.js";
+import { BuildConfig } from "../build-config.js";
+import { ExtensionlessHtml, GenerateImportMap, ServeStaticFiles } from "../module/index.js";
 
-const githubPages = new BuildConfig({
+const dev = new BuildConfig({
   watch: true,
-  serve: new ServeOptions({
-    directory: ".",
-    hot: true,
-  }),
+  serve: true,
+  modules: [
+    new ExtensionlessHtml(),
+    new ServeStaticFiles(),
+    new GenerateImportMap({
+      serve: true,
+    }),
+  ],
 });
 
-export default githubPages;
+export default dev;

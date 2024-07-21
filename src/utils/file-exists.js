@@ -1,15 +1,13 @@
-import { access } from "node:fs/promises";
-import { constants } from "node:fs";
+import { lstat } from "node:fs/promises";
 
 /**
- * Check if the file at the given path exists.
+ * Check if the file at the given path exists and is indeed a file.
  * @param file {string}
  * @return {Promise<boolean>}
  */
 export async function fileExists(file) {
   try {
-    await access(file, constants.F_OK);
-    return true;
+    return (await lstat(file)).isFile();
   } catch (e) {
     return false;
   }

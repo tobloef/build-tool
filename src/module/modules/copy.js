@@ -1,16 +1,13 @@
-import { BuildModule } from "./build-module.js";
-import fs from "fs/promises";
-import { join } from "node:path";
-import { log, LogLevel } from "../utils/logging.js";
-import { buildEvents } from "../events.js";
-import { fileExists } from "../utils/file-exists.js";
+import { Module } from "../module.js";
+import { log, LogLevel } from "../../utils/logging.js";
 import { readdir } from "node:fs/promises";
+import { join } from "node:path";
+import { buildEvents } from "../../events.js";
 import { dirname, resolve } from "path";
+import { fileExists } from "../../utils/file-exists.js";
+import fs from "fs/promises";
 
-/**
- * Copies files from one directory to another, preserving the directory structure.
- */
-export class Copy extends BuildModule {
+export class Copy extends Module {
   /** @type {string} */
   from;
   /** @type {string} */
@@ -40,7 +37,7 @@ export class Copy extends BuildModule {
     this.recursive = options.recursive ?? true;
   }
 
-  async run() {
+  async onBuild() {
     let logMessage = `📄 Copying files from "${this.from}" to "${this.to}"`;
 
     if (this.include) {
@@ -69,11 +66,11 @@ export class Copy extends BuildModule {
         continue;
       }
 
-      await this.#copyIfMatch(relativePath);
+      await this.#copyFileIfIncluded(relativePath);
     }
   }
 
-  async watch() {
+  async onWatch() {
     buildEvents.fileChanged.subscribe(async (event) => {
       const startsWithFrom = event.data.relative.startsWith(this.from);
 
@@ -85,7 +82,7 @@ export class Copy extends BuildModule {
         return;
       }
 
-      await this.#copyIfMatch(event.data.relative);
+      await this.#copyFileIfIncluded(event.data.relative);
     });
   }
 
@@ -93,7 +90,7 @@ export class Copy extends BuildModule {
    * @param {string} relativePath
    * @return {Promise<void>}
    */
-  async #copyIfMatch(relativePath) {
+  async #copyFileIfIncluded(relativePath) {
     const absolutePath = resolve(relativePath);
     const absoluteFrom = resolve(this.from);
     const relativeToFrom = absolutePath.replace(absoluteFrom, "");
