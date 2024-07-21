@@ -1,8 +1,10 @@
-import { log, LogLevel } from "./utils/logging.js";
+import {
+  log,
+  LogLevel,
+} from "./utils/logging.js";
 import { watch } from "fs";
 import { buildEvents } from "./events.js";
 import { debounce } from "./utils/debounce.js";
-import { resolve } from "path";
 import { lstat } from "node:fs/promises";
 import { getAbsolutePath } from "./utils/get-absolute-path.js";
 
@@ -79,10 +81,13 @@ function watchFiles(buildConfig) {
     if (!perPathDebouncedHandlers.has(absolutePath)) {
       perPathDebouncedHandlers.set(
         absolutePath,
-        debounce(() => buildEvents.fileChanged.publish({
-          absolute: absolutePath,
-          relative: filename,
-        }), 10),
+        debounce(() => {
+          log(LogLevel.VERBOSE, `File changed: ${filename} (${eventType})`);
+          buildEvents.fileChanged.publish({
+            absolute: absolutePath,
+            relative: filename,
+          });
+        }, 10),
       );
     }
 

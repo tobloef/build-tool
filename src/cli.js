@@ -1,12 +1,27 @@
 #!/usr/bin/env node
 
-import { log, LogLevel, setLogLevel } from "./utils/logging.js";
-import { getBuildConfig, ServeOptions } from "./build-config.js";
-import { inspect, parseArgs } from "node:util";
-import { runPipelineContinuously, runPipelineOnce } from "./pipeline.js";
-import { createHttpServer, startServer } from "./server/http-server.js";
+import {
+  log,
+  LogLevel,
+  setLogLevel,
+} from "./utils/logging.js";
+import {
+  getBuildConfig,
+  ServeOptions,
+} from "./build-config.js";
+import {
+  inspect,
+  parseArgs,
+} from "node:util";
+import {
+  runPipelineContinuously,
+  runPipelineOnce,
+} from "./pipeline.js";
+import {
+  createHttpServer,
+  startServer,
+} from "./server/http-server.js";
 import { attachWebSocketServer } from "./server/websocket-server.js";
-import { open } from "./utils/open.js";
 
 /** @import { Server } from "node:http"; */
 

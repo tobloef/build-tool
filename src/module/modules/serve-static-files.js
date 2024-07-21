@@ -26,7 +26,10 @@ export class ServeStaticFiles extends Module {
       return data;
     }
 
-    const path = req.url;
+    let path = req.url.split("?")[0];
+    if (path.startsWith("/")) {
+      path = path.slice(1);
+    }
 
     if (!await fileExists(path)) {
       return data;

@@ -1,5 +1,9 @@
 import { BuildConfig } from "../build-config.js";
-import { Copy, GenerateImportMap, NpmInstall } from "../module/index.js";
+import {
+  Copy,
+  GenerateImportMap,
+  NpmInstall,
+} from "../module/index.js";
 import { Clean } from "../module/modules/clean.js";
 
 const SOURCE_DIRECTORY = ".";

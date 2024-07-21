@@ -1,7 +1,5 @@
 import { Module } from "../module.js";
-import { readFile } from "node:fs/promises";
 import { fileExists } from "../../utils/file-exists.js";
-import { getContentTypeByPath } from "../../utils/content-type.js";
 
 /** @import { IncomingMessage, ServerResponse } from "node:http"; */
 
@@ -19,31 +17,42 @@ export class ExtensionlessHtml extends Module {
       return;
     }
 
-    const lastPathPart = req.url.split("/").pop();
+    let path = req.url.split("?")[0];
+    if (path.startsWith("/")) {
+      path = path.slice(1);
+    }
+
+    const lastPathPart = path.split("/").pop();
     const hasExtension = lastPathPart?.includes(".") ?? false;
 
     if (hasExtension) {
       return;
     }
 
-    const fileWithoutExtensionExists = await fileExists(req.url);
+    const fileWithoutExtensionExists = await fileExists(path);
 
     if (fileWithoutExtensionExists) {
       return;
     }
 
-    const urlWithExtension = `${req.url}.html`;
+    const pathWithExtension = `${path}.html`;
 
-    const typeWithExtensionExists = await fileExists(urlWithExtension);
+    const typeWithExtensionExists = await fileExists(pathWithExtension);
 
-    if (typeWithExtensionExists) {
-      req.url = urlWithExtension;
+    if (path !== "" && typeWithExtensionExists) {
+      req.url = `/${pathWithExtension}`;
       return;
     }
 
-    const urlWithIndexHtml = `${req.url}/index.html`;
+    let pathWithIndexHtml = path;
+    if (!pathWithIndexHtml.endsWith("/") && pathWithIndexHtml !== "") {
+      pathWithIndexHtml += "/";
+    }
+    pathWithIndexHtml += "index.html";
 
-    const indexHtmlExists = await fileExists(urlWithIndexHtml);
+    const urlWithIndexHtml = `/${pathWithIndexHtml}`;
+
+    const indexHtmlExists = await fileExists(pathWithIndexHtml);
 
     if (indexHtmlExists) {
       req.url = urlWithIndexHtml;

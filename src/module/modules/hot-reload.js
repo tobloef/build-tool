@@ -1,9 +1,14 @@
 import { randomString } from "../../utils/random-string.js";
 import { ContentType } from "../../utils/content-type.js";
 import { Module } from "../module.js";
-import { normalizeSlashes } from "../../utils/paths.js";
-import { resolve } from "path";
 import { buildEvents } from "../../events.js";
+import {
+  log,
+  LogLevel,
+} from "../../utils/logging.js";
+import { injectIntoBody } from "../../utils/inject.js";
+import { injectHotImports } from "@tobloef/hot-reload";
+import { dedent } from "../../utils/indent.js";
 
 /** @import { IncomingMessage, ServerResponse } from "node:http"; **/
 
@@ -11,18 +16,19 @@ import { buildEvents } from "../../events.js";
 /** @import { BuildConfig } from "../../build-config.js"; **/
 
 const INJECTED_PATH = `/${randomString(16)}/hot-reload-listener.js`;
+const WS_PREFIX = "hot reload: ";
 
 export class HotReload extends Module {
   /** @type {RegExp[]} */
   include;
 
   /**
-   * @param {Object} options
+   * @param {Object} [options]
    * @param {RegExp[]} [options.include]
    */
   constructor(options) {
     super();
-    this.include = options.include ?? [/\.js$/];
+    this.include = options?.include ?? [/\.js$/];
   }
 
   /**
@@ -33,12 +39,16 @@ export class HotReload extends Module {
     buildEvents.fileChanged.subscribe(async (event) => {
       const canonicalPath = event.data.relative;
 
-      if (!this.include.some((pattern) => pattern.test(canonicalPath))) {
+      const isIncluded = this.include.some((pattern) => pattern.test(canonicalPath));
+
+      if (!isIncluded) {
         return;
       }
 
-      buildEvents.hotReload.publish(canonicalPath);
+      buildEvents.websocketMessage.publish(`${WS_PREFIX}${canonicalPath}`);
     });
+
+    log(LogLevel.INFO, "🔥 Hot reloading enabled");
   }
 
   /**
@@ -91,7 +101,12 @@ export class HotReload extends Module {
     const shouldInject = !isNodeModule && !isInjected;
 
     if (data.type === ContentType.JS && shouldInject) {
-      data.content = injectJsWithHotModuleReplacement(data.content);
+      let path = req.url.split("?")[0];
+      if (path.startsWith("/")) {
+        path = path.slice(1);
+      }
+
+      data.content = await injectJsWithHotModuleReplacement(data.content, path);
     }
 
     return data;
@@ -100,12 +115,12 @@ export class HotReload extends Module {
 
 function getHotReloadListenerScript() {
   // language=JavaScript
-  return `
+  return dedent(`
     import { HotReload } from "@tobloef/hot-reload";
 
     const hotReload = new HotReload(window.location.origin);
 
-    export const socket = new WebSocket(\`ws://${window.location.host}\`);
+    export const socket = new WebSocket(\`ws://\${window.location.host}\`);
 
     socket.addEventListener("message", handleMessage);
 
@@ -118,7 +133,7 @@ function getHotReloadListenerScript() {
      * @param {MessageEvent} event
      */
     async function handleMessage(event) {
-      const prefix = "hot reload: ";
+      const prefix = "${WS_PREFIX}";
 
       if (!event.data.startsWith(prefix)) {
         return;
@@ -136,17 +151,25 @@ function getHotReloadListenerScript() {
 
       console.debug(\`Hot reload for "\${canonicalPath}" was accepted\`);
     }
-  `;
+  `, 4).trim();
 }
 
 /** @param {Buffer} fileContent */
 function injectHtmlWithHotReloadListenerScript(fileContent) {
-  // TODO
-  return fileContent;
+  const html = fileContent.toString("utf-8");
+  const script = `<script type="module" src="${INJECTED_PATH}"></script>`;
+  const newHtml = injectIntoBody(html, script);
+  return Buffer.from(newHtml);
 }
 
-/** @param {Buffer} fileContent */
-function injectJsWithHotModuleReplacement(fileContent) {
-  // TODO
-  return fileContent;
+/**
+ * @param {Buffer} fileContent
+ * @param {string} filePath
+ */
+async function injectJsWithHotModuleReplacement(fileContent, filePath) {
+  const js = fileContent.toString("utf-8");
+  const modulePath = filePath;
+  const rootPath = ".";
+  const newJs = await injectHotImports(js, modulePath, rootPath);
+  return Buffer.from(newJs);
 }

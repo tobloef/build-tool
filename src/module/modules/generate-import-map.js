@@ -1,7 +1,7 @@
 import { Module } from "../module.js";
-import { join, normalize } from "node:path";
+import { join } from "node:path";
 import {
-  glob, readdir,
+  readdir,
   readFile,
   writeFile,
 } from "node:fs/promises";
@@ -10,12 +10,15 @@ import BuildError from "../../build-error.js";
 import { normalizeSlashes } from "../../utils/paths.js";
 import { ContentType } from "../../utils/content-type.js";
 import { Buffer } from "node:buffer";
-import { log, LogLevel } from "../../utils/logging.js";
+import {
+  log,
+  LogLevel,
+} from "../../utils/logging.js";
 import { directoryExists } from "../../utils/directory-exists.js";
 import { buildEvents } from "../../events.js";
-import { resolve } from "path";
 import { indent } from "../../utils/indent.js";
 import { getAbsolutePath } from "../../utils/get-absolute-path.js";
+import { injectIntoHead } from "../../utils/inject.js";
 
 /** @import { IncomingMessage, ServerResponse } from "node:http"; **/
 
@@ -80,7 +83,7 @@ export class GenerateImportMap extends Module {
 
     if (await fileExists(this.outputPath)) {
       const htmlContent = await readFile(this.outputPath, "utf-8");
-      const newHtml = this.#injectImportMap(htmlContent, importMapScript);
+      const newHtml = injectIntoHead(htmlContent, importMapScript);
       log(LogLevel.VERBOSE, `Injecting import map into HTML file "${this.outputPath}"`);
       await writeFile(this.outputPath, newHtml);
     } else if (await directoryExists(this.outputPath)) {
@@ -92,7 +95,7 @@ export class GenerateImportMap extends Module {
 
         const filePath = join(this.outputPath, file);
         const htmlContent = await readFile(filePath, "utf-8");
-        const newHtml = this.#injectImportMap(htmlContent, importMapScript);
+        const newHtml = injectIntoHead(htmlContent, importMapScript);
         log(LogLevel.VERBOSE, `Injecting import map into HTML file "${filePath}"`);
         await writeFile(filePath, newHtml);
       }
@@ -135,7 +138,7 @@ export class GenerateImportMap extends Module {
 
       const importMapScript = await this.#generateScriptElement(this.packagePath);
       const htmlContent = await readFile(event.data.absolute, "utf-8");
-      const newHtml = this.#injectImportMap(htmlContent, importMapScript);
+      const newHtml = injectIntoHead(htmlContent, importMapScript);
       log(LogLevel.VERBOSE, `Injecting import map into HTML file "${event.data.relative}"`);
       await writeFile(event.data.absolute, newHtml);
     });
@@ -154,7 +157,7 @@ export class GenerateImportMap extends Module {
       return params.data;
     }
 
-    const { data, req, buildConfig } = params;
+    const { data, req } = params;
 
     if (data?.type !== ContentType.HTML) {
       return data;
@@ -164,22 +167,11 @@ export class GenerateImportMap extends Module {
 
     const scriptElement = await this.#generateScriptElement(this.packagePath);
 
-    const newHtml = this.#injectImportMap(data.content.toString(), scriptElement);
+    const newHtml = injectIntoHead(data.content.toString(), scriptElement);
 
     data.content = Buffer.from(newHtml);
 
     return data;
-  }
-
-  /**
-   * @param {string} htmlContent
-   * @param {string} importMapElement
-   * @returns {string}
-   */
-  #injectImportMap(htmlContent, importMapElement) {
-    const indentLevel = htmlContent.match(/\s*<html>/)?.[0]?.replace("<html>", "").length ?? 0;
-    importMapElement = indent(importMapElement, indentLevel + 1);
-    return htmlContent.replace(/<\/head>/, `${importMapElement}\n${indent("</head>", indentLevel)}`);
   }
 
   /**

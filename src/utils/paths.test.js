@@ -1,5 +1,11 @@
-import { describe, it } from "node:test";
-import { join, normalizeSlashes } from "./paths.js";
+import {
+  describe,
+  it,
+} from "node:test";
+import {
+  join,
+  normalizeSlashes,
+} from "./paths.js";
 import * as assert from "node:assert";
 
 describe("joinPaths", () => {

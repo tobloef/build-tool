@@ -1,5 +1,8 @@
 import { WebSocketServer } from "ws";
-import { log, LogLevel } from "../utils/logging.js";
+import {
+  log,
+  LogLevel,
+} from "../utils/logging.js";
 import { buildEvents } from "../events.js";
 
 /** @import { Server } from "node:http"; */
@@ -44,5 +47,9 @@ function createConnectionHandler(buildConfig) {
     socket.on("message", async (message) => {
       log(LogLevel.VERBOSE, `WebSocket server message received: ${message}`);
     });
-  };
+
+    buildEvents.websocketMessage.subscribe(async (event) => {
+      socket.send(event.data);
+    });
+  }
 }

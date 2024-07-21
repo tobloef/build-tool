@@ -1,6 +1,9 @@
 import { createServer } from "node:http";
 import { ContentType } from "../utils/content-type.js";
-import { log, LogLevel } from "../utils/logging.js";
+import {
+  log,
+  LogLevel,
+} from "../utils/logging.js";
 
 /** @import { IncomingMessage, ServerResponse, Server } from "node:http"; */
 /** @import { BuildConfig, ServeOptions } from "../build-config.js"; */
@@ -29,9 +32,17 @@ function createRequestHandler(buildConfig) {
   } = buildConfig;
 
   return async (req, res) => {
+    let originalUrl = req.url;
+
     for (const module of modules) {
       await module.onHttpRequest({ req, res, buildConfig });
     }
+
+    let logMessage = `${req.method} "${req.url}"`;
+    if (originalUrl !== req.url) {
+      logMessage += ` (original: "${originalUrl}")`;
+    }
+    log(LogLevel.VERBOSE, logMessage);
 
     /** @type {ResponseData | null} */
     let data = null;

@@ -1,5 +1,8 @@
 import { Module } from "../module.js";
-import { log, LogLevel } from "../../utils/logging.js";
+import {
+  log,
+  LogLevel,
+} from "../../utils/logging.js";
 import {
   readdir,
   writeFile,

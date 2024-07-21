@@ -1,5 +1,11 @@
-import { log, LogLevel } from "./utils/logging.js";
-import { isPreset, presets } from "./presets/index.js";
+import {
+  log,
+  LogLevel,
+} from "./utils/logging.js";
+import {
+  isPreset,
+  presets,
+} from "./presets/index.js";
 import { fileExists } from "./utils/file-exists.js";
 import { join } from "node:path";
 import { pathToFileURL } from "url";
