@@ -9,7 +9,7 @@
 * **Vanilla JS:** Written in vanilla JavaScript with [JSDoc](https://github.com/jsdoc/jsdoc) annotations for type checking, no transpilation step necessary.
 
 > [!WARNING]
-> This project was created primarily for personal use. I would not recommend using it in any of your own applications (but let me know if you do!).
+> This project was created primarily for personal use. For this reason, it is not fully documented and I would not recommend using it. That said, I hope it can at least be inspirational for your own projects.
 
 ## Features
 
