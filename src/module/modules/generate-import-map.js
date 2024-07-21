@@ -15,6 +15,7 @@ import { directoryExists } from "../../utils/directory-exists.js";
 import { buildEvents } from "../../events.js";
 import { resolve } from "path";
 import { indent } from "../../utils/indent.js";
+import { getAbsolutePath } from "../../utils/get-absolute-path.js";
 
 /** @import { IncomingMessage, ServerResponse } from "node:http"; **/
 
@@ -119,10 +120,7 @@ export class GenerateImportMap extends Module {
         return;
       }
 
-      let absoluteOutputPath = resolve(this.outputPath);
-      if (!absoluteOutputPath.endsWith("/")) {
-        absoluteOutputPath += "/";
-      }
+      const absoluteOutputPath = getAbsolutePath(this.outputPath);
 
       const isAHtmlFileInOutputPath = event.data.absolute.startsWith(absoluteOutputPath) && event.data.absolute.endsWith(".html");
 

@@ -7,6 +7,7 @@ import { exec } from "child_process";
 import { buildEvents } from "../../events.js";
 import { debounce } from "../../utils/debounce.js";
 import { resolve } from "path";
+import { getAbsolutePath } from "../../utils/get-absolute-path.js";
 
 /** @import { BuildEventListener } from "../../events.js"; */
 /** @import { BuildConfig } from "../../build-config.js"; */
@@ -57,7 +58,7 @@ export class NpmInstall extends Module {
 
     /** @type {BuildEventListener<{ absolute: string, relative: string }>} */
     const handler = async (event) => {
-      const absolutePackageJsonPath = resolve(this.path, "package.json");
+      const absolutePackageJsonPath = getAbsolutePath(join(this.path, "package.json"));
 
       if (event.data.absolute !== absolutePackageJsonPath) {
         return;

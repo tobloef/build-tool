@@ -4,7 +4,7 @@ import { buildEvents } from "./events.js";
 import { debounce } from "./utils/debounce.js";
 import { resolve } from "path";
 import { lstat } from "node:fs/promises";
-import { normalizeSlashes } from "./utils/paths.js";
+import { getAbsolutePath } from "./utils/get-absolute-path.js";
 
 /** @import { BuildConfig } from "./build-config.js"; */
 
@@ -56,9 +56,9 @@ function watchFiles(buildConfig) {
       return;
     }
 
-    const absolutePath = resolve(filename);
+    const absolutePath = getAbsolutePath(filename);
 
-    const absoluteIgnoredFolders = buildConfig.ignoredFolders.map((folder) => resolve(folder));
+    const absoluteIgnoredFolders = buildConfig.ignoredFolders.map((folder) => getAbsolutePath(folder, { isFolder: true }));
 
     if (absoluteIgnoredFolders.some((folder) => absolutePath.startsWith(folder))) {
       return;

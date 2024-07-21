@@ -24,6 +24,12 @@ const githubPages = new BuildConfig({
       to: BUILD_DIRECTORY,
       include: [/^package\.json$/],
       exclude: [/\/node_modules\//],
+      middleware: (input) => {
+        // Remove devDependencies from package.json
+        const packageJson = JSON.parse(input.toString());
+        delete packageJson.devDependencies;
+        return Buffer.from(JSON.stringify(packageJson, null, 2));
+      }
     }),
     new NpmInstall({
       path: BUILD_DIRECTORY,

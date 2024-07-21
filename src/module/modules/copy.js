@@ -1,11 +1,15 @@
 import { Module } from "../module.js";
 import { log, LogLevel } from "../../utils/logging.js";
-import { readdir } from "node:fs/promises";
-import { join, normalize } from "node:path";
+import {
+  readdir,
+  writeFile,
+} from "node:fs/promises";
+import { join } from "node:path";
 import { buildEvents } from "../../events.js";
-import { dirname, resolve } from "path";
+import { dirname } from "path";
 import { fileExists } from "../../utils/file-exists.js";
 import fs from "fs/promises";
+import { getAbsolutePath } from "../../utils/get-absolute-path.js";
 
 /** @import { BuildConfig } from "../../build-config.js"; */
 
@@ -21,6 +25,9 @@ export class Copy extends Module {
   /** @type {boolean} */
   recursive;
 
+  /** @type {((input: Buffer) => Buffer) | null} */
+  middleware;
+
   /**
    *
    * @param {Object} options
@@ -29,6 +36,7 @@ export class Copy extends Module {
    * @param {RegExp[]} [options.include]
    * @param {RegExp[]} [options.exclude]
    * @param {boolean} [options.recursive]
+   * @param {(input: Buffer) => Buffer} [options.middleware]
    */
   constructor(options) {
     super();
@@ -37,6 +45,7 @@ export class Copy extends Module {
     this.include = options.include ?? null;
     this.exclude = options.exclude ?? null;
     this.recursive = options.recursive ?? true;
+    this.middleware = options.middleware ?? null;
   }
 
   /**
@@ -107,12 +116,9 @@ export class Copy extends Module {
    * @return {Promise<boolean>}
    */
   async #copyFileIfIncluded(path) {
-    const absolutePath = resolve(path);
+    const absolutePath = getAbsolutePath(path);
 
-    let absoluteFrom = resolve(this.from);
-    if (!absoluteFrom.endsWith("/")) {
-      absoluteFrom += "/";
-    }
+    const absoluteFrom = getAbsolutePath(this.from, { isFolder: true });
 
     const relativeToFrom = absolutePath.replace(absoluteFrom, "");
 
@@ -126,6 +132,15 @@ export class Copy extends Module {
     const relativeToDestination = join(this.to, relativeToFrom);
     const destinationDirectory = dirname(relativeToDestination);
 
+    console.log({
+      path,
+      absolutePath,
+      absoluteFrom,
+      relativeToFrom,
+      relativeToDestination,
+      destinationDirectory,
+    });
+
     if (!await fileExists(path)) {
       if (await fileExists(relativeToDestination)) {
         log(LogLevel.VERBOSE, `Deleting ${path} from ${destinationDirectory}`);
@@ -137,6 +152,12 @@ export class Copy extends Module {
       log(LogLevel.VERBOSE, `Copying ${path} to ${relativeToDestination}`);
 
       await fs.copyFile(path, relativeToDestination);
+
+      if (this.middleware) {
+        const buffer = await fs.readFile(relativeToDestination);
+        const newBuffer = this.middleware(buffer);
+        await writeFile(relativeToDestination, newBuffer);
+      }
     }
 
     return true;
