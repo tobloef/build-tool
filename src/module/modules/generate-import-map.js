@@ -115,16 +115,20 @@ export class GenerateImportMap extends Module {
 
     const packagePathRelativeToProject = normalize(join(buildConfig.root, this.packagePath));
 
-    const absoluteoutputPath = resolve(buildConfig.root, this.outputPath ?? "./");
-    const isoutputPathADirectory = await directoryExists(absoluteoutputPath);
-    const isoutputPathAFile = !isoutputPathADirectory;
+    let absoluteOutputPath = resolve(buildConfig.root, this.outputPath ?? "./");
+    if (!absoluteOutputPath.endsWith("/")) {
+      absoluteOutputPath += "/";
+    }
+
+    const isOutputPathADirectory = await directoryExists(absoluteOutputPath);
+    const isOutputPathAFile = !isOutputPathADirectory;
 
     buildEvents.fileChanged.subscribe(async (event) => {
-      const isAHtmlFileInoutputPath = event.data.absolute.startsWith(absoluteoutputPath) && event.data.absolute.endsWith(".html");
+      const isAHtmlFileInOutputPath = event.data.absolute.startsWith(absoluteOutputPath) && event.data.absolute.endsWith(".html");
 
       const shouldInjectImportMap = (
-        (isoutputPathADirectory && isAHtmlFileInoutputPath) ||
-        (isoutputPathAFile && event.data.absolute === absoluteoutputPath)
+        (isOutputPathADirectory && isAHtmlFileInOutputPath) ||
+        (isOutputPathAFile && event.data.absolute === absoluteOutputPath)
       )
 
       if (!shouldInjectImportMap) {
