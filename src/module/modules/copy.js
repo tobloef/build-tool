@@ -1,11 +1,13 @@
 import { Module } from "../module.js";
 import { log, LogLevel } from "../../utils/logging.js";
 import { readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { join, normalize } from "node:path";
 import { buildEvents } from "../../events.js";
 import { dirname, resolve } from "path";
 import { fileExists } from "../../utils/file-exists.js";
 import fs from "fs/promises";
+
+/** @import { BuildConfig } from "../../build-config.js"; */
 
 export class Copy extends Module {
   /** @type {string} */
@@ -37,7 +39,11 @@ export class Copy extends Module {
     this.recursive = options.recursive ?? true;
   }
 
-  async onBuild() {
+  /**
+   * @param {Object} params
+   * @param {BuildConfig} params.buildConfig
+   */
+  async onBuild(params) {
     let logMessage = `📄 Copying files from "${this.from}" to "${this.to}"`;
 
     if (this.include) {
@@ -55,6 +61,8 @@ export class Copy extends Module {
       { withFileTypes: true, recursive: this.recursive },
     );
 
+    let somethingWasCopied = false;
+
     for (const file of files) {
       if (file.isDirectory()) {
         continue;
@@ -66,11 +74,19 @@ export class Copy extends Module {
         continue;
       }
 
-      await this.#copyFileIfIncluded(relativePath);
+      somethingWasCopied ||= await this.#copyFileIfIncluded(relativePath);
+    }
+
+    if (!somethingWasCopied) {
+      log(LogLevel.WARNING, `No files were copied`);
     }
   }
 
-  async onWatch() {
+  /**
+   * @param {Object} params
+   * @param {BuildConfig} params.buildConfig
+   */
+  async onWatch(params) {
     buildEvents.fileChanged.subscribe(async (event) => {
       const startsWithFrom = event.data.relative.startsWith(this.from);
 
@@ -87,35 +103,42 @@ export class Copy extends Module {
   }
 
   /**
-   * @param {string} relativePath
-   * @return {Promise<void>}
+   * @param {string} path
+   * @return {Promise<boolean>}
    */
-  async #copyFileIfIncluded(relativePath) {
-    const absolutePath = resolve(relativePath);
-    const absoluteFrom = resolve(this.from);
+  async #copyFileIfIncluded(path) {
+    const absolutePath = resolve(path);
+
+    let absoluteFrom = resolve(this.from);
+    if (!absoluteFrom.endsWith("/")) {
+      absoluteFrom += "/";
+    }
+
     const relativeToFrom = absolutePath.replace(absoluteFrom, "");
 
     const matchesInclude = this.include?.some((regex) => regex.test(relativeToFrom)) ?? true;
     const matchesExclude = this.exclude?.some((regex) => regex.test(relativeToFrom)) ?? false;
 
     if (!matchesInclude || matchesExclude) {
-      return;
+      return false;
     }
 
     const relativeToDestination = join(this.to, relativeToFrom);
     const destinationDirectory = dirname(relativeToDestination);
 
-    if (!await fileExists(relativePath)) {
+    if (!await fileExists(path)) {
       if (await fileExists(relativeToDestination)) {
-        log(LogLevel.VERBOSE, `Deleting ${relativePath} from ${destinationDirectory}`);
+        log(LogLevel.VERBOSE, `Deleting ${path} from ${destinationDirectory}`);
         await fs.rm(relativeToDestination);
       }
     } else {
       await fs.mkdir(destinationDirectory, { recursive: true });
 
-      log(LogLevel.VERBOSE, `Copying ${relativePath} to ${relativeToDestination}`);
+      log(LogLevel.VERBOSE, `Copying ${path} to ${relativeToDestination}`);
 
-      await fs.copyFile(relativePath, relativeToDestination);
+      await fs.copyFile(path, relativeToDestination);
     }
+
+    return true;
   }
 }

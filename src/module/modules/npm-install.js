@@ -13,28 +13,19 @@ import { resolve } from "path";
 
 export class NpmInstall extends Module {
   /**
-   * Path to the package to install dependencies from.
-   * This should be the directory containing the package.json file
+   * Path to the package to install dependencies in.
+   * This should be the directory containing the package.json file.
    * @type {string}
    */
-  packagePath;
-
-  /**
-   * Path to install the dependencies to.
-   * This is where the node_modules directory will be created.
-   * @type {string}
-   */
-  destinationPath;
+  path;
 
   /**
    * @param {Object} options
-   * @param {string} [options.packagePath]
-   * @param {string} [options.destinationPath]
+   * @param {string} [options.path]
    */
   constructor(options) {
     super();
-    this.packagePath = options.packagePath ?? "./";
-    this.destinationPath = options.destinationPath ?? "./";
+    this.path = options.path ?? "./";
   }
 
   /**
@@ -44,12 +35,12 @@ export class NpmInstall extends Module {
   async onBuild(params) {
     await super.onBuild(params);
 
-    log(LogLevel.INFO, `📦 Installing npm dependencies from "${this.packagePath}" to "${this.destinationPath}"`);
+    log(LogLevel.INFO, `📦 Installing npm dependencies from in "${this.path}"`);
 
-    const packageJsonPath = join(this.packagePath, "package.json");
+    const packageJsonPath = join(this.path, "package.json");
 
     if (!await fileExists(packageJsonPath)) {
-      throw new BuildError(`No package.json found in "${this.packagePath}"`);
+      throw new BuildError(`No package.json found in "${this.path}"`);
     }
 
     await this.#install();
@@ -66,7 +57,7 @@ export class NpmInstall extends Module {
 
     /** @type {BuildEventListener<{ absolute: string, relative: string }>} */
     const handler = async (event) => {
-      const absolutePackageJsonPath = resolve(this.packagePath, "package.json");
+      const absolutePackageJsonPath = resolve(this.path, "package.json");
 
       if (event.data.absolute !== absolutePackageJsonPath) {
         return;
@@ -81,7 +72,7 @@ export class NpmInstall extends Module {
   }
 
   async #install() {
-    const command = `npm install --omit=dev --install-links --prefix ${this.destinationPath}`;
+    const command = `npm install --omit=dev --install-links --prefix ${this.path}`;
     log(LogLevel.VERBOSE, `Executing "${command}"`);
 
     const childProcess = exec(command);

@@ -14,6 +14,7 @@ import { log, LogLevel } from "../../utils/logging.js";
 import { directoryExists } from "../../utils/directory-exists.js";
 import { buildEvents } from "../../events.js";
 import { resolve } from "path";
+import { indent } from "../../utils/indent.js";
 
 /** @import { IncomingMessage, ServerResponse } from "node:http"; **/
 
@@ -46,7 +47,6 @@ export class GenerateImportMap extends Module {
   /**
    * Path of the package to generate the import map for.
    * This should be the directory containing the package.json file.
-   * Relative to the project root.
    * @type {string}
    */
   packagePath;
@@ -69,33 +69,27 @@ export class GenerateImportMap extends Module {
    * @param {BuildConfig} params.buildConfig
    */
   async onBuild(params) {
-    const { buildConfig } = params;
-
     if (this.outputPath === null) {
       return;
     }
 
-    log(LogLevel.INFO, `🗺️ Generating import map`);
+    log(LogLevel.INFO, `🗺️ Generating import map for HTML files in "${this.outputPath}"`);
 
-    const packagePathRelativeToProject = normalize(join(buildConfig.root, this.packagePath));
+    const importMapScript = await this.#generateScriptElement(this.packagePath);
 
-    const importMapScript = await this.#generateScriptElement(packagePathRelativeToProject);
-
-    const outputPathRelativeToProject = normalize(join(buildConfig.root, this.outputPath));
-
-    if (await fileExists(outputPathRelativeToProject)) {
-      const htmlContent = await readFile(outputPathRelativeToProject, "utf-8");
+    if (await fileExists(this.outputPath)) {
+      const htmlContent = await readFile(this.outputPath, "utf-8");
       const newHtml = this.#injectImportMap(htmlContent, importMapScript);
-      log(LogLevel.VERBOSE, `Injecting import map into HTML file "${outputPathRelativeToProject}"`);
-      await writeFile(outputPathRelativeToProject, newHtml);
-    } else if (await directoryExists(outputPathRelativeToProject)) {
-      const files = await readdir(outputPathRelativeToProject, { recursive: true });
+      log(LogLevel.VERBOSE, `Injecting import map into HTML file "${this.outputPath}"`);
+      await writeFile(this.outputPath, newHtml);
+    } else if (await directoryExists(this.outputPath)) {
+      const files = await readdir(this.outputPath, { recursive: true });
       for (const file of files) {
         if (!file.endsWith(".html")) {
           continue;
         }
 
-        const filePath = join(outputPathRelativeToProject, file);
+        const filePath = join(this.outputPath, file);
         const htmlContent = await readFile(filePath, "utf-8");
         const newHtml = this.#injectImportMap(htmlContent, importMapScript);
         log(LogLevel.VERBOSE, `Injecting import map into HTML file "${filePath}"`);
@@ -113,17 +107,23 @@ export class GenerateImportMap extends Module {
   async onWatch(params) {
     const { buildConfig } = params;
 
-    const packagePathRelativeToProject = normalize(join(buildConfig.root, this.packagePath));
-
-    let absoluteOutputPath = resolve(buildConfig.root, this.outputPath ?? "./");
-    if (!absoluteOutputPath.endsWith("/")) {
-      absoluteOutputPath += "/";
+    if (this.outputPath === null) {
+      return;
     }
 
-    const isOutputPathADirectory = await directoryExists(absoluteOutputPath);
+    const isOutputPathADirectory = await directoryExists(this.outputPath);
     const isOutputPathAFile = !isOutputPathADirectory;
 
     buildEvents.fileChanged.subscribe(async (event) => {
+      if (this.outputPath === null) {
+        return;
+      }
+
+      let absoluteOutputPath = resolve(this.outputPath);
+      if (!absoluteOutputPath.endsWith("/")) {
+        absoluteOutputPath += "/";
+      }
+
       const isAHtmlFileInOutputPath = event.data.absolute.startsWith(absoluteOutputPath) && event.data.absolute.endsWith(".html");
 
       const shouldInjectImportMap = (
@@ -135,7 +135,7 @@ export class GenerateImportMap extends Module {
         return;
       }
 
-      const importMapScript = await this.#generateScriptElement(packagePathRelativeToProject);
+      const importMapScript = await this.#generateScriptElement(this.packagePath);
       const htmlContent = await readFile(event.data.absolute, "utf-8");
       const newHtml = this.#injectImportMap(htmlContent, importMapScript);
       log(LogLevel.VERBOSE, `Injecting import map into HTML file "${event.data.relative}"`);
@@ -164,9 +164,7 @@ export class GenerateImportMap extends Module {
 
     log(LogLevel.VERBOSE, `Injecting import map into HTML file "${req.url}"`);
 
-    const packagePathRelativeToProject = normalize(join(buildConfig.root, this.packagePath));
-
-    const scriptElement = await this.#generateScriptElement(packagePathRelativeToProject);
+    const scriptElement = await this.#generateScriptElement(this.packagePath);
 
     const newHtml = this.#injectImportMap(data.content.toString(), scriptElement);
 
@@ -177,11 +175,13 @@ export class GenerateImportMap extends Module {
 
   /**
    * @param {string} htmlContent
-   * @param {string} importMapTag
+   * @param {string} importMapElement
    * @returns {string}
    */
-  #injectImportMap(htmlContent, importMapTag) {
-    return htmlContent.replace(/<\/head>/, `${importMapTag}</head>`);
+  #injectImportMap(htmlContent, importMapElement) {
+    const indentLevel = htmlContent.match(/\s*<html>/)?.[0]?.replace("<html>", "").length ?? 0;
+    importMapElement = indent(importMapElement, indentLevel + 1);
+    return htmlContent.replace(/<\/head>/, `${importMapElement}\n${indent("</head>", indentLevel)}`);
   }
 
   /**
@@ -201,11 +201,11 @@ export class GenerateImportMap extends Module {
 
     const importMapString = JSON.stringify(importMap, null, 2);
 
-    const importMapScript = `<script type="importmap">${importMapString}</script>`;
+    const importMapScript = `<script type="importmap">\n${indent(importMapString, 1)}\n</script>`;
 
     const endTime = performance.now();
 
-    log(LogLevel.VERBOSE, `Generated import map in ${(endTime - startTime).toFixed(3)}ms`);
+    log(LogLevel.VERBOSE, `Generated import map in ${((endTime - startTime) / 1000).toFixed(3)} seconds`);
 
     return importMapScript;
   }
@@ -225,8 +225,8 @@ export class GenerateImportMap extends Module {
       const pathInOwnModules = join(packagePath, "node_modules", dependency);
       const pathInProjectModules = join(this.packagePath, "node_modules", dependency);
 
-      const isInOwnModules = await fileExists(pathInOwnModules) && packagePath !== this.packagePath;
-      const isInProjectModules = await fileExists(pathInProjectModules);
+      const isInOwnModules = await directoryExists(pathInOwnModules) && packagePath !== this.packagePath;
+      const isInProjectModules = await directoryExists(pathInProjectModules);
 
       if (!isInOwnModules && !isInProjectModules) {
         throw new BuildError(`Dependency "${dependency}" not found for package "${packageName}"`);

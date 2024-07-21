@@ -13,8 +13,6 @@ export class BuildConfig {
   watch;
   /** @type {ServeOptions | false} */
   serve;
-  /** @type {string} */
-  root;
   /** @type {string[]} */
   ignoredFolders;
 
@@ -23,14 +21,12 @@ export class BuildConfig {
    *  @param {Module[]} [options.modules]
    *  @param {boolean} [options.watch]
    *  @param {boolean | ServeOptions} [options.serve]
-   *  @param {string} [options.root]
    *  @param {string[]} [options.ignoredFolders]
    */
   constructor(options) {
     this.modules = options.modules ?? [];
     this.watch = options.watch ?? false;
     this.serve = options.serve === true ? new ServeOptions() : options.serve ?? false;
-    this.root = options.root ?? process.cwd();
     this.ignoredFolders = options.ignoredFolders ?? ["node_modules", ".git"];
   }
 }
@@ -95,7 +91,7 @@ async function getBuildConfigPath() {
 
   log(
     LogLevel.ERROR,
-    "No build config found. You must either:" +
+    "Build config not found. You must either:" +
     "\n  * Have a build-config.js (or .mjs) file in the working directory" +
     "\n  * Specify a path to a build config as the first argument" +
     `\n  * Specify a preset as the first argument (available presets: ${Object.keys(presets).join(", ")})`,

@@ -30,20 +30,8 @@ export class HotReload extends Module {
    * @param {BuildConfig} params.buildConfig
    */
   async onWatch(params) {
-    const { buildConfig } = params;
-    
-    let absoluteBuildPath = normalizeSlashes(resolve(buildConfig.root));
-    if (!absoluteBuildPath.endsWith("/")) {
-      absoluteBuildPath += "/";
-    }
-
     buildEvents.fileChanged.subscribe(async (event) => {
-      if (!event.data.absolute.startsWith(absoluteBuildPath)) {
-        return;
-      }
-
-      const path = event.data.absolute.slice(absoluteBuildPath.length);
-      const canonicalPath = path;
+      const canonicalPath = event.data.relative;
 
       if (!this.include.some((pattern) => pattern.test(canonicalPath))) {
         return;
