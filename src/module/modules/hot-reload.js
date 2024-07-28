@@ -116,42 +116,52 @@ export class HotReload extends Module {
 function getHotReloadListenerScript() {
   // language=JavaScript
   return dedent(`
-    import { HotReload } from "@tobloef/hot-reload";
-
-    const hotReload = new HotReload(window.location.origin);
-
-    export const socket = new WebSocket(\`ws://\${window.location.host}\`);
-
-    socket.addEventListener("message", handleMessage);
-
-    socket.addEventListener("open", () => {
-      const hotEmoji = String.fromCodePoint(0x1F525);
-      console.info(\`\${hotEmoji} Hot reloading enabled\`);
-    });
-
-    /**
-     * @param {MessageEvent} event
-     */
-    async function handleMessage(event) {
-      const prefix = "${WS_PREFIX}";
-
-      if (!event.data.startsWith(prefix)) {
+    (async () => {
+      let hotReloadModule;
+      try {
+        hotReloadModule = await import("@tobloef/hot-reload");
+      } catch (error) {
+        console.error("Failed to import hot-reload module. Perhaps @tobloef/hot-reload is not installed?", error);
         return;
       }
 
-      const canonicalPath = event.data.slice(prefix.length);
+      const { HotReload } = hotReloadModule;
 
-      const wasAccepted = await hotReload.reload(canonicalPath);
+      const hotReload = new HotReload(window.location.origin);
 
-      if (!wasAccepted) {
-        console.debug(\`Hot reload for "\${canonicalPath}" was not accepted, reloading the page\`);
-        window.location.reload();
-        return;
+      const socket = new WebSocket(\`ws://\${window.location.host}\`);
+
+      socket.addEventListener("message", handleMessage);
+
+      socket.addEventListener("open", () => {
+        const hotEmoji = String.fromCodePoint(0x1F525);
+        console.info(\`\${hotEmoji} Hot reloading enabled\`);
+      });
+
+      /**
+       * @param {MessageEvent} event
+       */
+      async function handleMessage(event) {
+        const prefix = "${WS_PREFIX}";
+
+        if (!event.data.startsWith(prefix)) {
+          return;
+        }
+
+        const canonicalPath = event.data.slice(prefix.length);
+
+        const wasAccepted = await hotReload.reload(canonicalPath);
+
+        if (!wasAccepted) {
+          console.debug(\`Hot reload for "\${canonicalPath}" was not accepted, reloading the page\`);
+          window.location.reload();
+          return;
+        }
+
+        console.debug(\`Hot reload for "\${canonicalPath}" was accepted\`);
       }
-
-      console.debug(\`Hot reload for "\${canonicalPath}" was accepted\`);
-    }
-  `, 4).trim();
+    })();
+  `, 3).trim();
 }
 
 /** @param {Buffer} fileContent */
