@@ -135,15 +135,6 @@ export class Copy extends Module {
     const relativeToDestination = join(this.to, relativeToFrom);
     const destinationDirectory = dirname(relativeToDestination);
 
-    console.log({
-      path,
-      absolutePath,
-      absoluteFrom,
-      relativeToFrom,
-      relativeToDestination,
-      destinationDirectory,
-    });
-
     if (!await fileExists(path)) {
       if (await fileExists(relativeToDestination)) {
         log(LogLevel.VERBOSE, `Deleting ${path} from ${destinationDirectory}`);
