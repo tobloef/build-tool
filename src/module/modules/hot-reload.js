@@ -28,7 +28,7 @@ export class HotReload extends Module {
    */
   constructor(options) {
     super();
-    this.include = options?.include ?? [/\.js$/];
+    this.include = options?.include ?? [/\.js$/, /\.html$/, /\.css$/];
   }
 
   /**
