@@ -2,6 +2,18 @@
 /** @import { ResponseData } from "../../server/http-server.js"; */
 export class ServeStaticFiles extends Module {
     /**
+     * @param {Object} options
+     * @param {string} [options.path]
+     */
+    constructor(options: {
+        path?: string | undefined;
+    });
+    /**
+     * Path of the directory to serve static files from.
+     * @type {string}
+     */
+    path: string;
+    /**
      * @param {Object} params
      * @param {ResponseData | null} params.data
      * @param {IncomingMessage} params.req

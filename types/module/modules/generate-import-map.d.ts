@@ -15,11 +15,13 @@ export class GenerateImportMap extends Module {
      * @param {string} [options.outputPath]
      * @param {boolean} [options.serve]
      * @param {string} [options.packagePath]
+     * @param {RegExp[]} [options.exclude]
      */
     constructor(options?: {
         outputPath?: string | undefined;
         serve?: boolean | undefined;
         packagePath?: string | undefined;
+        exclude?: RegExp[] | undefined;
     } | undefined);
     /**
      * If set, the import map will be injected into the HTML file(s) at this path.
@@ -38,6 +40,11 @@ export class GenerateImportMap extends Module {
      * @type {string}
      */
     packagePath: string;
+    /**
+     * Files to exclude from the import map.
+     * @type {RegExp[]}
+     */
+    exclude: RegExp[];
     #private;
 }
 export type ImportMap = {
