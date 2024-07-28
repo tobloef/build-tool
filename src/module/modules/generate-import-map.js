@@ -56,16 +56,24 @@ export class GenerateImportMap extends Module {
   packagePath;
 
   /**
+   * Files to exclude from the import map.
+   * @type {RegExp[]}
+   */
+  exclude;
+
+  /**
    * @param {Object} [options]
    * @param {string} [options.outputPath]
    * @param {boolean} [options.serve]
    * @param {string} [options.packagePath]
+   * @param {RegExp[]} [options.exclude]
    */
   constructor(options) {
     super();
     this.outputPath = options?.outputPath || null;
     this.serve = options?.serve || false;
     this.packagePath = options?.packagePath || ".";
+    this.exclude = options?.exclude || [];
   }
 
   /**
@@ -84,7 +92,7 @@ export class GenerateImportMap extends Module {
     if (await fileExists(this.outputPath)) {
       const htmlContent = await readFile(this.outputPath, "utf-8");
       const newHtml = injectIntoHead(htmlContent, importMapScript);
-      log(LogLevel.VERBOSE, `Injecting import map into HTML file "${this.outputPath}"`);
+      log(LogLevel.VERBOSE, `Injecting import map into HTML file "${this.outputPath}":\n${importMapScript}`);
       await writeFile(this.outputPath, newHtml);
     } else if (await directoryExists(this.outputPath)) {
       const files = await readdir(this.outputPath, { recursive: true });
@@ -94,9 +102,14 @@ export class GenerateImportMap extends Module {
         }
 
         const filePath = join(this.outputPath, file);
+
+        if (this.exclude.some((regex) => regex.test(filePath))) {
+          continue;
+        }
+
         const htmlContent = await readFile(filePath, "utf-8");
         const newHtml = injectIntoHead(htmlContent, importMapScript);
-        log(LogLevel.VERBOSE, `Injecting import map into HTML file "${filePath}"`);
+        log(LogLevel.VERBOSE, `Injecting import map into HTML file "${filePath}":\n${importMapScript}`);
         await writeFile(filePath, newHtml);
       }
     } else {
@@ -109,8 +122,6 @@ export class GenerateImportMap extends Module {
    * @param {BuildConfig} params.buildConfig
    */
   async onWatch(params) {
-    const { buildConfig } = params;
-
     if (this.outputPath === null) {
       return;
     }
@@ -139,7 +150,7 @@ export class GenerateImportMap extends Module {
       const importMapScript = await this.#generateScriptElement(this.packagePath);
       const htmlContent = await readFile(event.data.absolute, "utf-8");
       const newHtml = injectIntoHead(htmlContent, importMapScript);
-      log(LogLevel.VERBOSE, `Injecting import map into HTML file "${event.data.relative}"`);
+      log(LogLevel.VERBOSE, `Injecting import map into HTML file "${event.data.relative}":\n${importMapScript}`);
       await writeFile(event.data.absolute, newHtml);
     });
   }
@@ -163,9 +174,9 @@ export class GenerateImportMap extends Module {
       return data;
     }
 
-    log(LogLevel.VERBOSE, `Injecting import map into HTML file "${req.url}"`);
-
     const scriptElement = await this.#generateScriptElement(this.packagePath);
+
+    log(LogLevel.VERBOSE, `Injecting import map into HTML file "${req.url}":\n${scriptElement}`);
 
     const newHtml = injectIntoHead(data.content.toString(), scriptElement);
 
