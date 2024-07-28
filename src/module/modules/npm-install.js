@@ -38,7 +38,7 @@ export class NpmInstall extends Module {
   async onBuild(params) {
     await super.onBuild(params);
 
-    log(LogLevel.INFO, `📦 Installing npm dependencies from in "${this.path}"`);
+    log(LogLevel.INFO, `📦 Installing npm dependencies in "${this.path}"`);
 
     const packageJsonPath = join(this.path, "package.json");
 
@@ -75,10 +75,10 @@ export class NpmInstall extends Module {
   }
 
   async #install() {
-    const command = `npm install --omit=dev --install-links --prefix ${this.path}`;
+    const command = `npm install --omit=dev --install-links`;
     log(LogLevel.VERBOSE, `Executing "${command}"`);
 
-    const childProcess = exec(command);
+    const childProcess = exec(command, { cwd: this.path });
 
     childProcess.stdout?.on("data", (data) => {
       log(LogLevel.VERBOSE, data);
