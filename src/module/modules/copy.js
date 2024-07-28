@@ -86,7 +86,8 @@ export class Copy extends Module {
         continue;
       }
 
-      somethingWasCopied ||= await this.#copyFileIfIncluded(relativePath);
+      const fileWasCopied = await this.#copyFileIfIncluded(relativePath);
+      somethingWasCopied ||= fileWasCopied;
     }
 
     if (!somethingWasCopied) {
