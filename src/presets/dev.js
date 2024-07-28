@@ -11,7 +11,12 @@ const dev = new BuildConfig({
   serve: true,
   modules: [
     new ExtensionlessHtml(),
-    new ServeStaticFiles(),
+    new ServeStaticFiles({
+      path: "src",
+    }),
+    new ServeStaticFiles({
+      path: ".",
+    }),
     new GenerateImportMap({
       serve: true,
     }),
