@@ -6,28 +6,25 @@ import {
 } from "../module/index.js";
 import { Clean } from "../module/modules/clean.js";
 
-const SOURCE_DIRECTORY = ".";
-const BUILD_DIRECTORY = "docs";
-
 const githubPages = new BuildConfig({
   modules: [
     new Clean({
-      path: BUILD_DIRECTORY,
+      path: "docs",
     }),
     new Copy({
-      from: SOURCE_DIRECTORY,
-      to: BUILD_DIRECTORY,
+      from: "src",
+      to: "docs",
       include: [
         /.+\.js$/,
         /.+\.html$/,
       ],
-      exclude: [/\/node_modules\//],
+      exclude: [/[\/\\]node_modules[\\\/]/],
     }),
     new Copy({
-      from: SOURCE_DIRECTORY,
-      to: BUILD_DIRECTORY,
+      from: ".",
+      to: "docs",
       include: [/^package\.json$/],
-      exclude: [/\/node_modules\//],
+      exclude: [/[\/\\]node_modules[\\\/]/],
       middleware: (input) => {
         // Remove devDependencies from package.json
         const packageJson = JSON.parse(input.toString());
@@ -36,12 +33,13 @@ const githubPages = new BuildConfig({
       }
     }),
     new NpmInstall({
-      path: BUILD_DIRECTORY,
+      path: "docs",
     }),
     new GenerateImportMap({
-      packagePath: BUILD_DIRECTORY,
-      outputPath: BUILD_DIRECTORY
-    })
+      packagePath: "docs",
+      outputPath: "docs",
+      exclude: [/[\/\\]node_modules[\\\/]/],
+    }),
   ],
 });
 
