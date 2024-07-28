@@ -52,11 +52,6 @@ export class ExtensionlessHtml extends Module {
 
     const urlWithIndexHtml = `/${pathWithIndexHtml}`;
 
-    const indexHtmlExists = await fileExists(pathWithIndexHtml);
-
-    if (indexHtmlExists) {
-      req.url = urlWithIndexHtml;
-      return;
-    }
+    req.url = urlWithIndexHtml;
   }
 }
