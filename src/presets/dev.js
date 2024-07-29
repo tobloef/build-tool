@@ -20,7 +20,9 @@ const dev = new BuildConfig({
     new GenerateImportMap({
       serve: true,
     }),
-    new HotReload(),
+    new HotReload({
+      include: [/^src[\/\\]/],
+    }),
   ],
 });
 
