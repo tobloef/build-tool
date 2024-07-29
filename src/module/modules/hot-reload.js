@@ -137,6 +137,10 @@ function getHotReloadListenerScript() {
         const hotEmoji = String.fromCodePoint(0x1F525);
         console.info(\`\${hotEmoji} Hot reloading enabled\`);
       });
+      
+      socket.addEventListener("close", () => {
+        console.warn("WebSocket connection closed, hot reloading disabled until page is reloaded");
+      });
 
       /**
        * @param {MessageEvent} event
