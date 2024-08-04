@@ -4,7 +4,7 @@ import {
 } from "./utils/logging.js";
 import {
   isPreset,
-  presets,
+  presetPaths,
 } from "./presets/index.js";
 import { fileExists } from "./utils/file-exists.js";
 import { join } from "node:path";
@@ -89,7 +89,7 @@ async function getBuildConfigPath() {
     }
 
     if (isPreset(path)) {
-      return presets[path];
+      return presetPaths[path];
     }
 
     return path;
@@ -100,7 +100,7 @@ async function getBuildConfigPath() {
     "Build config not found. You must either:" +
     "\n  * Have a build-config.js (or .mjs) file in the working directory" +
     "\n  * Specify a path to a build config as the first argument" +
-    `\n  * Specify a preset as the first argument (available presets: ${Object.keys(presets).join(", ")})`,
+    `\n  * Specify a preset as the first argument (available presets: ${Object.keys(presetPaths).join(", ")})`,
   );
   process.exit(1);
 }
