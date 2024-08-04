@@ -5,7 +5,7 @@ import {
 import {
   isPreset,
   presetPaths,
-} from "./presets/index.js";
+} from "./preset/preset-path.js";
 import { fileExists } from "./utils/file-exists.js";
 import { join } from "node:path";
 import { pathToFileURL } from "url";

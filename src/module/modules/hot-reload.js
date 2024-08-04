@@ -22,13 +22,18 @@ export class HotReload extends Module {
   /** @type {RegExp[]} */
   include;
 
+  /** @type {boolean} */
+  hotModuleReplacement;
+
   /**
    * @param {Object} [options]
    * @param {RegExp[]} [options.include]
+   * @param {boolean} [options.hotModuleReplacement]
    */
   constructor(options) {
     super();
     this.include = options?.include ?? [/\.js$/, /\.html$/, /\.css$/];
+    this.hotModuleReplacement = options?.hotModuleReplacement ?? true;
   }
 
   /**
@@ -48,7 +53,13 @@ export class HotReload extends Module {
       buildEvents.websocketMessage.publish(`${WS_PREFIX}${canonicalPath}`);
     });
 
-    log(LogLevel.INFO, "🔥 Hot reloading enabled");
+    let message = "🔥 Hot reloading enabled";
+
+    if (!this.hotModuleReplacement) {
+      message += " (without hot module replacement)";
+    }
+
+    log(LogLevel.INFO, message);
   }
 
   /**
@@ -70,7 +81,7 @@ export class HotReload extends Module {
 
     res.statusCode = 200;
     res.setHeader("Content-Type", "application/javascript");
-    res.end(getHotReloadListenerScript());
+    res.end(getHotReloadListenerScript(this.hotModuleReplacement));
   }
 
   /**
@@ -98,7 +109,7 @@ export class HotReload extends Module {
 
     const isNodeModule = req.url.split("/").includes("node_modules");
     const isInjected = req.url === INJECTED_PATH;
-    const shouldInject = !isNodeModule && !isInjected;
+    const shouldInject = !isNodeModule && !isInjected && this.hotModuleReplacement;
 
     if (data.type === ContentType.JS && shouldInject) {
       let path = req.url.split("?")[0];
@@ -113,7 +124,10 @@ export class HotReload extends Module {
   }
 }
 
-function getHotReloadListenerScript() {
+/**
+ * @param {boolean} enableHotModuleReplacement
+ */
+function getHotReloadListenerScript(enableHotModuleReplacement) {
   // language=JavaScript
   return dedent(`
     (async () => {
@@ -121,7 +135,7 @@ function getHotReloadListenerScript() {
       try {
         hotReloadModule = await import("@tobloef/hot-reload");
       } catch (error) {
-        console.error("Failed to import hot-reload module. Perhaps @tobloef/hot-reload is not installed?", error);
+        console.error(\`Failed to import hot-reload module. Perhaps "@tobloef/hot-reload" is not installed?\`, error);
         return;
       }
 
@@ -135,7 +149,14 @@ function getHotReloadListenerScript() {
 
       socket.addEventListener("open", () => {
         const hotEmoji = String.fromCodePoint(0x1F525);
-        console.info(\`\${hotEmoji} Hot reloading enabled\`);
+
+				let message = \`\${hotEmoji} Hot reloading enabled\`;
+
+				if (!${enableHotModuleReplacement}) {
+					message += " (without hot module replacement)";
+				}
+        
+        console.info(message);
       });
       
       socket.addEventListener("close", () => {

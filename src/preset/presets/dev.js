@@ -1,10 +1,10 @@
-import { BuildConfig } from "../build-config.js";
+import { BuildConfig } from "../../build-config.js";
 import {
   ExtensionlessHtml,
   GenerateImportMap,
   HotReload,
   ServeStaticFiles,
-} from "../module/index.js";
+} from "../../module/index.js";
 
 const dev = new BuildConfig({
   watch: true,

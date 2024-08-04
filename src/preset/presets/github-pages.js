@@ -1,10 +1,10 @@
-import { BuildConfig } from "../build-config.js";
+import { BuildConfig } from "../../build-config.js";
 import {
   Copy,
   GenerateImportMap,
   NpmInstall,
-} from "../module/index.js";
-import { Clean } from "../module/modules/clean.js";
+} from "../../module/index.js";
+import { Clean } from "../../module/modules/clean.js";
 
 const githubPages = new BuildConfig({
   modules: [
