@@ -14,10 +14,6 @@ const githubPages = new BuildConfig({
     new Copy({
       from: "src",
       to: "docs",
-      include: [
-        /.+\.js$/,
-        /.+\.html$/,
-      ],
       exclude: [/[\/\\]node_modules[\\\/]/],
     }),
     new Copy({
