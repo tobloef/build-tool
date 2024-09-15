@@ -59,6 +59,8 @@ function createRequestHandler(buildConfig) {
 
     res.statusCode = 200;
     res.setHeader("Content-Type", data.type);
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
     res.end(data.content);
   };
 }
