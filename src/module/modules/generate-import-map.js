@@ -237,7 +237,7 @@ export class GenerateImportMap extends Module {
       const dependencyPackageJsonPath = join(dependencyPackagePath, "package.json");
       const dependencyPackageJsonFile = await readFile(dependencyPackageJsonPath, "utf-8");
       const dependencyPackageJson = JSON.parse(dependencyPackageJsonFile);
-      const dependencyMain = dependencyPackageJson.main ?? "index.js";
+      const dependencyEntryFile = dependencyPackageJson.module ?? dependencyPackageJson.main ?? "index.js";
 
       if (isInOwnModules) {
         const scope = `/${normalizeSlashes(packagePath)}`;
@@ -245,10 +245,10 @@ export class GenerateImportMap extends Module {
           importMap.scopes[scope] = {};
         }
 
-        importMap.scopes[scope][`${dependency}`] = `/${normalizeSlashes(pathInOwnModules)}/${dependencyMain}`;
+        importMap.scopes[scope][`${dependency}`] = `/${normalizeSlashes(pathInOwnModules)}/${dependencyEntryFile}`;
         importMap.scopes[scope][`${dependency}/`] = `/${normalizeSlashes(pathInOwnModules)}/`;
       } else {
-        importMap.imports[`${dependency}`] = `/${normalizeSlashes(pathInProjectModules)}/${dependencyMain}`;
+        importMap.imports[`${dependency}`] = `/${normalizeSlashes(pathInProjectModules)}/${dependencyEntryFile}`;
         importMap.imports[`${dependency}/`] = `/${normalizeSlashes(pathInProjectModules)}/`;
       }
 
