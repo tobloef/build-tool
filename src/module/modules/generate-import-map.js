@@ -237,7 +237,11 @@ export class GenerateImportMap extends Module {
       const dependencyPackageJsonPath = join(dependencyPackagePath, "package.json");
       const dependencyPackageJsonFile = await readFile(dependencyPackageJsonPath, "utf-8");
       const dependencyPackageJson = JSON.parse(dependencyPackageJsonFile);
-      const dependencyEntryFile = dependencyPackageJson.module ?? dependencyPackageJson.main ?? "index.js";
+      let dependencyEntryFile = dependencyPackageJson.module ?? dependencyPackageJson.main ?? "index.js";
+
+      if (dependencyEntryFile.startsWith("./")) {
+        dependencyEntryFile = dependencyEntryFile.slice(2);
+      }
 
       if (isInOwnModules) {
         const scope = `/${normalizeSlashes(packagePath)}`;
