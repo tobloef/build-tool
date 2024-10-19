@@ -1,7 +1,7 @@
 import { BuildConfig } from "../../build-config.js";
 import {
   ExtensionlessHtml,
-  GenerateImportMap,
+  ImportMaps,
   HotReload,
   ServeStaticFiles,
 } from "../../module/index.js";
@@ -17,8 +17,10 @@ const dev = new BuildConfig({
     new ServeStaticFiles({
       path: ".",
     }),
-    new GenerateImportMap({
+    new ImportMaps({
+      path: "src",
       serve: true,
+      include: [/\.html$/],
     }),
     new HotReload({
       include: [/^src[\/\\]/],
