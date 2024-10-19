@@ -278,7 +278,7 @@ export class ImportMaps extends Module {
     for (const file of files) {
       if (
         this.include.length > 0 &&
-        this.include.some((regex) => !regex.test(file))
+        this.include.every((regex) => !regex.test(file))
       ) {
         continue;
       }
