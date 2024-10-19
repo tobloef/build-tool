@@ -2,7 +2,7 @@ import { Module } from "../module.js";
 import { join } from "node:path";
 import {
   readdir,
-  readFile,
+  readFile, writeFile,
 } from "node:fs/promises";
 import { fileExists } from "../../utils/file-exists.js";
 import BuildError from "../../build-error.js";
@@ -252,7 +252,15 @@ export class ImportMaps extends Module {
     if (await fileExists(path)) {
       const contentType = getContentTypeByPath(path);
       const fileContent = await readFile(path, "utf-8");
-      await this.#injectIntoContent(fileContent, contentType, importMap);
+      const newContent = await this.#injectIntoContent(fileContent, contentType, importMap);
+
+      if (newContent === fileContent) {
+        return;
+      }
+
+      log(LogLevel.VERBOSE, `Injecting import map into file "${path}".`);
+
+      await writeFile(path, newContent);
     } else if (await directoryExists(this.path)) {
       await this.#injectIntoDirectory(path, importMap);
     } else {
@@ -321,6 +329,11 @@ export class ImportMaps extends Module {
    */
   async #injectIntoJs(contents, importMap) {
     const imports = this.#getImports(contents);
+
+    if (imports.length === 0) {
+      return contents;
+    }
+
     return this.#replaceImports(contents, imports, importMap);
   }
 
