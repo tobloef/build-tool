@@ -2,7 +2,8 @@ import { Module } from "../module.js";
 import { join } from "node:path";
 import {
   readdir,
-  readFile, writeFile,
+  readFile,
+  writeFile,
 } from "node:fs/promises";
 import { fileExists } from "../../utils/file-exists.js";
 import BuildError from "../../build-error.js";
@@ -143,7 +144,7 @@ export class ImportMaps extends Module {
       return params.data;
     }
 
-    const { data } = params;
+    const { data, req } = params;
 
     if (data === null) {
       return data;
@@ -153,10 +154,37 @@ export class ImportMaps extends Module {
       this.#importMap = await this.#generateImportMap(this.packagePath);
     }
 
+    const filePath = typeof data.meta?.filePath === "string"
+      ? data.meta.filePath
+      : undefined;
+
+    if (filePath === undefined) {
+      log(LogLevel.WARNING, `Cannot inject import map into response with no file path, skipping.`);
+      return data;
+    }
+
+    if (
+      this.include.length > 0 &&
+      this.include.every((regex) => !regex.test(filePath))
+    ) {
+      return data;
+    }
+
+    if (this.exclude.some((regex) => regex.test(filePath))) {
+      return data;
+    }
+
+    const importMapForPath = await this.#transformImportMapForPath(
+      this.#importMap,
+      filePath,
+    );
+
+    log(LogLevel.VERBOSE, `Injecting import map into ile "${filePath}" served at "${req.url}".`);
+
     const newContent = await this.#injectIntoContent(
       data.content.toString(),
       data.type,
-      this.#importMap
+      importMapForPath,
     );
 
     data.content = Buffer.from(newContent);
@@ -224,11 +252,13 @@ export class ImportMaps extends Module {
           importMap.scopes[scope] = {};
         }
 
-        importMap.scopes[scope][`${dependency}`] = `/${normalizeSlashes(pathInOwnModules)}/${dependencyEntryFile}`;
-        importMap.scopes[scope][`${dependency}/`] = `/${normalizeSlashes(pathInOwnModules)}/`;
+        const absolutePath = getAbsolutePath(pathInOwnModules);
+        importMap.scopes[scope][`${dependency}`] = `${absolutePath}/${dependencyEntryFile}`;
+        importMap.scopes[scope][`${dependency}/`] = `${absolutePath}/`;
       } else {
-        importMap.imports[`${dependency}`] = `/${normalizeSlashes(pathInProjectModules)}/${dependencyEntryFile}`;
-        importMap.imports[`${dependency}/`] = `/${normalizeSlashes(pathInProjectModules)}/`;
+        const absolutePath = getAbsolutePath(pathInProjectModules);
+        importMap.imports[`${dependency}`] = `${absolutePath}/${dependencyEntryFile}`;
+        importMap.imports[`${dependency}/`] = `${absolutePath}/`;
       }
 
       await this.#populateImportMap(dependencyPackagePath, importMap);
@@ -252,7 +282,10 @@ export class ImportMaps extends Module {
     if (await fileExists(path)) {
       const contentType = getContentTypeByPath(path);
       const fileContent = await readFile(path, "utf-8");
-      const newContent = await this.#injectIntoContent(fileContent, contentType, importMap);
+
+      const importMapForPath = await this.#transformImportMapForPath(importMap, path);
+
+      const newContent = await this.#injectIntoContent(fileContent, contentType, importMapForPath);
 
       if (newContent === fileContent) {
         return;
@@ -266,6 +299,49 @@ export class ImportMaps extends Module {
     } else {
       throw new BuildError(`Path "${this.path}" does not exist.`);
     }
+  }
+
+  /**
+   * @param {ImportMap} importMap
+   * @param {string} path
+   * @returns {Promise<ImportMap>}
+   */
+  async #transformImportMapForPath(importMap, path) {
+    /** @type {ImportMap} */
+    const importMapForPath = { imports: {}, scopes: {} };
+
+    const absolutePath = getAbsolutePath(path);
+
+    /** @param {string} newImport */
+    const makeRelativePath = async (newImport) => {
+      let relativePath = await this.#getRelativePathBetween(absolutePath, newImport);
+      relativePath = normalizeSlashes(relativePath);
+
+      const isBare = !relativePath.startsWith(".") && !relativePath.startsWith("/");
+      if (isBare) {
+        relativePath = `./${relativePath}`;
+      }
+
+      return relativePath;
+    }
+
+    for (const [originalImport, newImport] of Object.entries(importMap.imports)) {
+      const relativePath = await makeRelativePath(newImport);
+      importMapForPath.imports[originalImport] = relativePath
+    }
+
+    for (const [scope, imports] of Object.entries(importMap.scopes)) {
+      for (const [originalImport, newImport] of Object.entries(imports)) {
+        if (importMapForPath.scopes[scope] === undefined) {
+          importMapForPath.scopes[scope] = {};
+        }
+
+        const relativePath = await makeRelativePath(newImport);
+        importMapForPath.scopes[scope][originalImport] = relativePath;
+      }
+    }
+
+    return importMapForPath;
   }
 
   /**
@@ -381,5 +457,32 @@ export class ImportMaps extends Module {
     }
 
     return content;
+  }
+
+  /**
+   * @param {string} from
+   * @param {string} to
+   * @returns {Promise<string>}
+   */
+  async #getRelativePathBetween(from, to) {
+    const fromParts = from.split("/");
+    const toParts = to.split("/");
+
+    let i = 0;
+    while (fromParts[i] === toParts[i]) {
+      i++;
+    }
+
+    const remainingToParts = toParts.slice(i);
+    let remainingFromParts = fromParts.slice(i);
+
+    const isFile = await fileExists(from);
+    if (isFile) {
+      remainingFromParts = remainingFromParts.slice(0, -1);
+    }
+
+    const relativePath = [...remainingFromParts.map(() => ".."), ...remainingToParts].join("/");
+
+    return relativePath;
   }
 }

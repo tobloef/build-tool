@@ -8,7 +8,12 @@ import {
 /** @import { IncomingMessage, ServerResponse, Server } from "node:http"; */
 /** @import { BuildConfig, ServeOptions } from "../build-config.js"; */
 
-/** @typedef {{ content: Buffer, type: ContentType }} ResponseData */
+/**
+ * @typedef {Object} ResponseData
+ * @property {Buffer} content
+ * @property {ContentType} type
+ * @property {Record<string, unknown>} [meta]
+ */
 
 /**
  * @param {BuildConfig} buildConfig
