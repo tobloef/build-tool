@@ -1,7 +1,7 @@
 import { BuildConfig } from "../../build-config.js";
 import {
   Copy,
-  GenerateImportMap,
+  ImportMaps,
   NpmInstall,
 } from "../../module/index.js";
 import { Clean } from "../../module/modules/clean.js";
@@ -31,10 +31,12 @@ const githubPages = new BuildConfig({
     new NpmInstall({
       path: "docs",
     }),
-    new GenerateImportMap({
+    new ImportMaps({
+      write: true,
       packagePath: "docs",
-      outputPath: "docs",
+      path: "docs",
       exclude: [/[\/\\]node_modules[\\\/]/],
+      include: [/\.html$/],
     }),
   ],
 });

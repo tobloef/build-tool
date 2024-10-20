@@ -14,7 +14,7 @@ export async function getPackageJson() {
 
 /**
  * Traverse folder tree upwards until we find a package.json.
- * @returns {Promise<string>} The contents of the package.json file.
+ * @returns {Promise<string>} The content of the package.json file.
  */
 async function findPackageJson() {
   let oldDir = null;
