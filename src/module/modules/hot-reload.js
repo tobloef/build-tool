@@ -22,17 +22,22 @@ export class HotReload extends Module {
   /** @type {RegExp[]} */
   include;
 
+  /** @type {RegExp[]} */
+  exclude;
+
   /** @type {boolean} */
   hotModuleReplacement;
 
   /**
    * @param {Object} [options]
    * @param {RegExp[]} [options.include]
+   * @param {RegExp[]} [options.exclude]
    * @param {boolean} [options.hotModuleReplacement]
    */
   constructor(options) {
     super();
     this.include = options?.include ?? [/\.js$/, /\.html$/, /\.css$/];
+    this.exclude = options?.exclude ?? [];
     this.hotModuleReplacement = options?.hotModuleReplacement ?? true;
   }
 
@@ -45,8 +50,9 @@ export class HotReload extends Module {
       const canonicalPath = event.data.relative;
 
       const isIncluded = this.include.some((pattern) => pattern.test(canonicalPath));
+      const isExcluded = this.exclude.some((pattern) => pattern.test(canonicalPath));
 
-      if (!isIncluded) {
+      if (!isIncluded || isExcluded) {
         return;
       }
 
