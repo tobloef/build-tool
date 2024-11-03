@@ -117,7 +117,7 @@ export class HotReload extends Module {
         path = path.slice(1);
       }
 
-      data.content = await injectJsWithHotModuleReplacement(data.content, path);
+      data.content = injectJsWithHotModuleReplacement(data.content, path);
     }
 
     return data;
@@ -201,10 +201,10 @@ function injectHtmlWithHotReloadListenerScript(fileContent) {
  * @param {Buffer} fileContent
  * @param {string} filePath
  */
-async function injectJsWithHotModuleReplacement(fileContent, filePath) {
+function injectJsWithHotModuleReplacement(fileContent, filePath) {
   const js = fileContent.toString("utf-8");
   const modulePath = filePath;
   const rootPath = ".";
-  const newJs = await injectHotImports(js, modulePath, rootPath);
+  const newJs = injectHotImports(js, modulePath, rootPath);
   return Buffer.from(newJs);
 }
