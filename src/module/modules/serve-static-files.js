@@ -56,9 +56,9 @@ export class ServeStaticFiles extends Module {
     const type = getContentTypeByPath(filePath);
     const content = await readFile(filePath);
 
-    // Set the path as a request metadata.
     const meta = {
       filePath,
+      rootPath: this.path,
     };
 
     return {

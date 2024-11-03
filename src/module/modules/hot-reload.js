@@ -117,7 +117,8 @@ export class HotReload extends Module {
         path = path.slice(1);
       }
 
-      data.content = injectJsWithHotModuleReplacement(data.content, path);
+      const rootPath = String(params.data?.meta?.rootPath ?? "");
+      data.content = injectJsWithHotModuleReplacement(data.content, path, rootPath);
     }
 
     return data;
@@ -200,11 +201,11 @@ function injectHtmlWithHotReloadListenerScript(fileContent) {
 /**
  * @param {Buffer} fileContent
  * @param {string} filePath
+ * @param {string} [rootPath]
  */
-function injectJsWithHotModuleReplacement(fileContent, filePath) {
+function injectJsWithHotModuleReplacement(fileContent, filePath, rootPath) {
   const js = fileContent.toString("utf-8");
   const modulePath = filePath;
-  const rootPath = ".";
   const newJs = injectHotImports(js, modulePath, rootPath);
   return Buffer.from(newJs);
 }
