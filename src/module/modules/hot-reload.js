@@ -178,7 +178,7 @@ function getHotReloadListenerScript(enableHotModuleReplacement) {
         const wasAccepted = await hotReload.reload(canonicalPath);
 
         if (!wasAccepted) {
-          console.debug(\`Hot reload for "\${canonicalPath}" was not accepted, reloading the page\`);
+          console.debug(\`Hot reload for "\${canonicalPath}" was not accepted, reloading the page.\`);
           window.location.reload();
           return;
         }

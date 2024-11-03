@@ -179,7 +179,7 @@ export class ImportMaps extends Module {
       filePath,
     );
 
-    log(LogLevel.VERBOSE, `Injecting import map into ile "${filePath}" served at "${req.url}".`);
+    log(LogLevel.VERBOSE, `Injecting import map into file "${filePath}" served at "${req.url}".`);
 
     const newContent = await this.#injectIntoContent(
       data.content.toString(),
