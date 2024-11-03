@@ -60,7 +60,7 @@ export class ImportMaps extends Module {
   /**
    * @param {Object} options
    * @param {string} options.path Path to the file or directory of files to inject the import map into.
-   * @param {RegExp[]} [options.include=[]] If specified and the path is a directory, only files matching these patterns will have the import map injected.
+   * @param {RegExp[]} [options.include=[/\.html$/]] If specified and the path is a directory, only files matching these patterns will have the import map injected.
    * @param {RegExp[]} [options.exclude=[]] If specified and the path is a directory, files matching these patterns will not have the import map injected.
    * @param {string} [options.packagePath="."] Path of the package to generate the import map for. This should be the directory containing the package.json file.
    * @param {boolean} [options.serve=true] Whether to inject import maps into files served by the development server.
@@ -69,7 +69,7 @@ export class ImportMaps extends Module {
   constructor(options) {
     super();
     this.path = options.path;
-    this.include = options.include ?? [];
+    this.include = options.include ?? [/\.html$/];
     this.exclude = options.exclude ?? [];
     this.packagePath = options.packagePath ?? ".";
     this.serve = options.serve ?? true;
