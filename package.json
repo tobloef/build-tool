@@ -22,7 +22,7 @@
     "generate-types": "tsc --emitDeclarationOnly --project tsconfig.types.json"
   },
   "dependencies": {
-    "@tobloef/hot-reload": "^1.2.3",
+    "@tobloef/hot-reload": "^1.2.5",
     "ws": "^8.17.1"
   },
   "devDependencies": {
