@@ -41,3 +41,7 @@ The available flags are:
 * `--open` Open the dev server's URL in the default browser.
 * `--verbose` Log a lot of extra information.
 * `--quiet` Only log errors.
+
+## Limitations
+
+* Known issue: If circular import is encountered during when hot module reloading is enabled, the page will not load.

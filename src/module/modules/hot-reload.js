@@ -23,17 +23,22 @@ export class HotReload extends Module {
   /** @type {RegExp[]} */
   include;
 
+  /** @type {RegExp[]} */
+  exclude;
+
   /** @type {boolean} */
   hotModuleReplacement;
 
   /**
    * @param {Object} [options]
    * @param {RegExp[]} [options.include]
+   * @param {RegExp[]} [options.exclude]
    * @param {boolean} [options.hotModuleReplacement]
    */
   constructor(options) {
     super();
     this.include = options?.include ?? [/\.js$/, /\.html$/, /\.css$/];
+    this.exclude = options?.exclude ?? [];
     this.hotModuleReplacement = options?.hotModuleReplacement ?? true;
   }
 
@@ -46,8 +51,9 @@ export class HotReload extends Module {
       const canonicalPath = normalizeSlashes(event.data.relative);
 
       const isIncluded = this.include.some((pattern) => pattern.test(canonicalPath));
+      const isExcluded = this.exclude.some((pattern) => pattern.test(canonicalPath));
 
-      if (!isIncluded) {
+      if (!isIncluded || isExcluded) {
         return;
       }
 
@@ -118,7 +124,8 @@ export class HotReload extends Module {
         path = path.slice(1);
       }
 
-      data.content = await injectJsWithHotModuleReplacement(data.content, path);
+      const rootPath = String(params.data?.meta?.rootPath ?? "");
+      data.content = injectJsWithHotModuleReplacement(data.content, path, rootPath);
     }
 
     return data;
@@ -179,7 +186,7 @@ function getHotReloadListenerScript(enableHotModuleReplacement) {
         const wasAccepted = await hotReload.reload(canonicalPath);
 
         if (!wasAccepted) {
-          console.debug(\`Hot reload for "\${canonicalPath}" was not accepted, reloading the page\`);
+          console.debug(\`Hot reload for "\${canonicalPath}" was not accepted, reloading the page.\`);
           window.location.reload();
           return;
         }
@@ -201,11 +208,11 @@ function injectHtmlWithHotReloadListenerScript(fileContent) {
 /**
  * @param {Buffer} fileContent
  * @param {string} filePath
+ * @param {string} [rootPath]
  */
-async function injectJsWithHotModuleReplacement(fileContent, filePath) {
+function injectJsWithHotModuleReplacement(fileContent, filePath, rootPath) {
   const js = fileContent.toString("utf-8");
   const modulePath = filePath;
-  const rootPath = ".";
-  const newJs = await injectHotImports(js, modulePath, rootPath);
+  const newJs = injectHotImports(js, modulePath, rootPath);
   return Buffer.from(newJs);
 }
