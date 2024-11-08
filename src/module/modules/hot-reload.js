@@ -9,6 +9,7 @@ import {
 import { injectIntoBody } from "../../utils/inject.js";
 import { injectHotImports } from "@tobloef/hot-reload";
 import { dedent } from "../../utils/indent.js";
+import { normalizeSlashes } from "../../utils/paths.js";
 
 /** @import { IncomingMessage, ServerResponse } from "node:http"; **/
 
@@ -42,7 +43,7 @@ export class HotReload extends Module {
    */
   async onWatch(params) {
     buildEvents.fileChanged.subscribe(async (event) => {
-      const canonicalPath = event.data.relative;
+      const canonicalPath = normalizeSlashes(event.data.relative);
 
       const isIncluded = this.include.some((pattern) => pattern.test(canonicalPath));
 
