@@ -7,7 +7,7 @@
 * This project follows my [Wheel Reinventor's Principles](https://github.com/tobloef/wheel-reinventors-principles): In short, it's made from scratch for learning and to tailor it to my specific use cases.
 * **Extensible:** Must be usable across multiple projects, with the possibility of creating project-specific extensions.
 * **Vanilla:** Written in JavaScript with [JSDoc](https://github.com/jsdoc/jsdoc) annotations for type checking, no transpilation step necessary.
-* **Minimalistic:** Keep the build process simple, avoid too many layers between your browser and your code.
+* **Minimalistic:** Keep the build process simple, avoid too many layers between your code and the browser.
 
 > [!WARNING]
 > This project was created primarily for personal use. For this reason, it is not fully documented and I would not recommend using it. That said, I hope it can at least be inspirational for your own projects!
