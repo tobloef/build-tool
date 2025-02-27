@@ -14,7 +14,7 @@
 
 ## Features
 
-* Configuration-driven pipelines ([see example pipelines](https://github.com/tobloef/build-tool/tree/main/src/presets)).
+* Configuration-driven pipelines ([see example pipelines](https://github.com/tobloef/build-tool/tree/main/src/preset/presets)).
 * Extensible module system ([list of built-in modules](https://github.com/tobloef/build-tool/tree/main/src/module/modules)).
 * Build once or continuously watch for changes.
 * Dev server for serving built files over HTTP and communicating build-events over WebSockets.
